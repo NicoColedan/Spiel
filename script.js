@@ -16,10 +16,13 @@ const shopClose = document.getElementById("shop-close");
 const creditRange = document.getElementById("credit-range");
 const creditNumber = document.getElementById("credit-number");
 const buyCreditsButton = document.getElementById("buy-credits");
+const sellCreditsButton = document.getElementById("sell-credits");
 const rollCoinsButton = document.getElementById("roll-coins");
 const rerollCoinsButton = document.getElementById("reroll-coins");
 const coinResults = document.getElementById("coin-results");
 const coinSpinner = document.getElementById("coin-spinner");
+const sellRange = document.getElementById("sell-range");
+const sellNumber = document.getElementById("sell-number");
 const inventorySlots = Array.from(document.querySelectorAll(".inventory-slot[data-slot]"));
 const passiveSlots = Array.from(document.querySelectorAll(".inventory-slot[data-passive-slot]"));
 const passiveCoins = document.getElementById("passive-coins");
@@ -31,6 +34,7 @@ const confirmBuy = document.getElementById("confirm-buy");
 const confirmCancel = document.getElementById("confirm-cancel");
 const autoBuyCheckbox = document.getElementById("auto-buy");
 const restartButton = document.getElementById("restart");
+const coinBonus = document.getElementById("coin-bonus");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -67,6 +71,7 @@ let gameOver = false;
 const updateCredits = () => {
   creditsLabel.textContent = credits;
   updateStakeOptions();
+  updateSellControls();
 };
 
 const updateBalance = () => {
@@ -91,6 +96,18 @@ const showToast = (message) => {
   toast.textContent = message;
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 1800);
+};
+
+const showCoinBonus = (amount, label, icon = "🪙") => {
+  if (!amount) return;
+  const bonusEl = document.createElement("div");
+  bonusEl.className = "coin-bonus-item";
+  bonusEl.innerHTML = `<span class="coin-bonus-icon">${icon}</span><span class="coin-bonus-text">+${amount} ${label}</span>`;
+  coinBonus.appendChild(bonusEl);
+  setTimeout(() => {
+    bonusEl.classList.add("hide");
+    setTimeout(() => bonusEl.remove(), 600);
+  }, 1400);
 };
 
 const openConfirm = (text, action) => {
@@ -120,6 +137,23 @@ const showWin = (amount) => {
 const updateStakeOptions = () => {
   spinCost = Number(stakeSelect.value);
   updatePayoutTable();
+};
+
+const updateSellControls = () => {
+  const maxSell = Math.max(1, credits);
+  sellRange.max = maxSell;
+  sellNumber.max = maxSell;
+  if (credits <= 0) {
+    sellRange.value = 1;
+    sellNumber.value = 1;
+    sellCreditsButton.disabled = true;
+  } else {
+    if (Number(sellNumber.value) > maxSell) {
+      sellNumber.value = maxSell;
+      sellRange.value = maxSell;
+    }
+    sellCreditsButton.disabled = false;
+  }
 };
 
 const updatePayoutTable = () => {
@@ -432,7 +466,6 @@ const spinReels = async () => {
     freeSpins -= 1;
   } else {
     credits -= spinCost;
-    balance -= spinCost;
   }
   updateCredits();
   updateBalance();
@@ -465,6 +498,7 @@ const spinReels = async () => {
   let message = "Leider kein Gewinn.";
   let matchCount = 0;
   let bonusTriggered = false;
+  const bonusEvents = [];
 
   const hit = Object.entries(counts).find(([, count]) => count >= 2);
   if (hit) {
@@ -497,14 +531,14 @@ const spinReels = async () => {
     payoutValue += bonus;
     credits += bonus;
     bonusTriggered = true;
-    showToast(`Lucky Dog +${bonus}`);
+    bonusEvents.push({ amount: bonus, label: "Lucky Dog", icon: "🐶" });
   }
 
   if (matchCount === 3 && symbolsOnly.every((icon) => icon === "7️⃣") && passives.has("lucky-cat")) {
     credits += payoutValue;
     payoutValue *= 2;
     bonusTriggered = true;
-    showToast("Lucky Cat: Jackpot verdoppelt!");
+    bonusEvents.push({ amount: payoutValue / 2, label: "Lucky Cat", icon: "🐱" });
   }
 
   if (doubleWinNext) {
@@ -512,9 +546,15 @@ const spinReels = async () => {
       credits += payoutValue;
       payoutValue *= 2;
       bonusTriggered = true;
-      showToast("Golden Carrot: Gewinn verdoppelt!");
+      bonusEvents.push({ amount: payoutValue / 2, label: "Golden Carrot", icon: "🥕" });
     }
-    doubleWinNext = false;
+    if (payoutValue > 0) {
+      doubleWinNext = false;
+      const carrotIndex = inventory.findIndex((coin) => coin?.id === "golden-carrot");
+      if (carrotIndex !== -1) {
+        inventory[carrotIndex].remainingSpins = 0;
+      }
+    }
   }
 
   if (winBonusTurns > 0) {
@@ -523,6 +563,7 @@ const spinReels = async () => {
       credits += bonus;
       payoutValue += bonus;
       bonusTriggered = true;
+      bonusEvents.push({ amount: bonus, label: "Bonus", icon: "✨" });
     }
     winBonusTurns -= 1;
     if (winBonusTurns === 0) {
@@ -534,7 +575,7 @@ const spinReels = async () => {
   if (!lastSpinWin && luckyPunchArmed) {
     credits += luckyPunchReward;
     bonusTriggered = true;
-    showToast(`Lucky Punch +${luckyPunchReward}`);
+    bonusEvents.push({ amount: luckyPunchReward, label: "Lucky Punch", icon: "🥊" });
     luckyPunchArmed = false;
   } else if (lastSpinWin && luckyPunchArmed) {
     luckyPunchArmed = false;
@@ -544,6 +585,9 @@ const spinReels = async () => {
   showPayout(message, payoutValue > 0);
   winOverlay.classList.toggle("boost", bonusTriggered);
   showWin(payoutValue);
+  bonusEvents.forEach((event, index) => {
+    setTimeout(() => showCoinBonus(event.amount, event.label, event.icon), index * 150);
+  });
 
   inventory.forEach((coin, index) => {
     if (!coin || !coin.active) return;
@@ -668,6 +712,32 @@ buyCreditsButton.addEventListener("click", () => {
   });
 });
 
+sellCreditsButton.addEventListener("click", () => {
+  const amount = Number(sellNumber.value);
+  if (amount > credits) {
+    showToast("Nicht genug Credits zum Verkaufen.");
+    return;
+  }
+  const gain = amount * 2;
+  openConfirm(`Credits verkaufen? (${amount} Credits für ${gain} €)`, () => {
+    credits -= amount;
+    balance += gain;
+    updateBalance();
+    updateCredits();
+    showToast(`-${amount} Credits verkauft`);
+  });
+});
+
+sellRange.addEventListener("input", () => {
+  sellNumber.value = sellRange.value;
+});
+
+sellNumber.addEventListener("input", () => {
+  const value = Math.max(1, Math.min(Number(sellNumber.max), Number(sellNumber.value || 1)));
+  sellNumber.value = value;
+  sellRange.value = value;
+});
+
 rollCoinsButton.addEventListener("click", rollCoins);
 rerollCoinsButton.addEventListener("click", () => {
   if (!coinPurchased) {
@@ -706,9 +776,9 @@ inventorySlots.forEach((slot, index) => {
         coin.active = true;
         coin.onUse?.();
         if (coin.id === "bonuscoin") coin.remainingSpins = 5;
-        if (coin.id === "red-pepper") coin.remainingSpins = 4;
-        if (coin.id === "green-pepper") coin.remainingSpins = 6;
-        if (coin.id === "golden-carrot") coin.remainingSpins = 1;
+        if (coin.id === "red-pepper") coin.remainingSpins = 3;
+        if (coin.id === "green-pepper") coin.remainingSpins = 5;
+        if (coin.id === "golden-carrot") coin.remainingSpins = Number.POSITIVE_INFINITY;
         if (coin.id === "lucky-punch") coin.remainingSpins = 1;
         if (coin.id === "fake-coin") {
           coin.remainingSpins = 1;
