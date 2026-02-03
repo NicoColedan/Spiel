@@ -85,7 +85,10 @@
               <button class="inventory-slot" data-slot="2" aria-label="Inventar Slot 3"></button>
               <button class="inventory-slot" data-slot="3" aria-label="Inventar Slot 4"></button>
             </div>
-            <div class="passive-coins" id="passive-coins"></div>
+            <div class="passive-coins" id="passive-coins">
+              <button class="inventory-slot small" data-passive-slot="0" aria-label="Passiver Slot 1"></button>
+              <button class="inventory-slot small" data-passive-slot="1" aria-label="Passiver Slot 2"></button>
+            </div>
           </div>
         </section>
 
@@ -131,10 +134,14 @@
 
           <div class="shop-section">
             <h3>Coin-Automat</h3>
-            <button class="btn" id="roll-coins">Coin ziehen (50 €)</button>
-            <div class="coin-spinner" id="coin-spinner">🪙</div>
+            <button class="btn" id="roll-coins">Coin ziehen (25 Credits)</button>
+            <div class="coin-spinner" id="coin-spinner" aria-hidden="true">
+              <span class="spinner-coin">🪙</span>
+              <span class="spinner-coin">🪙</span>
+              <span class="spinner-coin">🪙</span>
+            </div>
             <div class="coin-results" id="coin-results"></div>
-            <button class="btn ghost" id="reroll-coins">Reroll (50 €)</button>
+            <button class="btn ghost" id="reroll-coins" disabled>Reroll (25 Credits)</button>
           </div>
         </div>
       </div>
