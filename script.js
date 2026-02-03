@@ -1,10 +1,12 @@
 const reels = Array.from(document.querySelectorAll(".reel"));
 const payout = document.getElementById("payout");
 const creditsLabel = document.getElementById("credits");
-const spinButton = document.getElementById("spin");
 const autoButton = document.getElementById("auto");
 const stopButton = document.getElementById("stop");
 const lostOverlay = document.getElementById("lost");
+const leverButton = document.getElementById("lever");
+const winOverlay = document.getElementById("win");
+const winAmount = document.getElementById("win-amount");
 
 const symbols = [
   { icon: "🍒", two: 8, three: 25 },
@@ -32,6 +34,14 @@ const showPayout = (message, highlight = false) => {
 
 const setLostState = (show) => {
   lostOverlay.classList.toggle("show", show);
+};
+
+const showWin = (amount) => {
+  if (amount <= 0) return;
+  winAmount.textContent = `+${amount}`;
+  winOverlay.classList.remove("show");
+  void winOverlay.offsetWidth;
+  winOverlay.classList.add("show");
 };
 
 const getRandomSymbol = () => {
@@ -119,6 +129,7 @@ const spinReels = async () => {
 
   updateCredits();
   showPayout(message, payoutValue > 0);
+  showWin(payoutValue);
   isSpinning = false;
 
   if (autoSpin) {
@@ -126,9 +137,11 @@ const spinReels = async () => {
   }
 };
 
-spinButton.addEventListener("click", () => {
+leverButton.addEventListener("click", () => {
   autoSpin = false;
   clearTimeout(spinInterval);
+  leverButton.classList.add("pulled");
+  setTimeout(() => leverButton.classList.remove("pulled"), 250);
   spinReels();
 });
 
