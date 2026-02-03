@@ -1,77 +1,79 @@
-+<!doctype html>
-+<html lang="de">
-+  <head>
-+    <meta charset="UTF-8" />
-+    <meta name="viewport" content="width=device-width, initial-scale=1" />
-+    <title>Slot Maschine</title>
-+    <link rel="stylesheet" href="style.css" />
-+  </head>
-+  <body>
-+    <div class="page">
-+      <header>
-+        <h1>Neon Slot Maschine</h1>
-+        <p>Drücke auf „Spin“ oder nutze „Auto-Spin“, um dein Glück zu testen.</p>
-+      </header>
-+
-+      <main class="layout">
-+        <section class="slot-machine">
-+          <div class="cabinet">
-+            <div class="marquee">
-+              <span>Lucky Neon Slots</span>
-+            </div>
-+
-+            <div class="screen" id="screen">
-+              <div class="reels" aria-live="polite">
-+                <div class="reel" data-reel="0">
-+                  <div class="symbol">🍒</div>
-+                </div>
-+                <div class="reel" data-reel="1">
-+                  <div class="symbol">⭐</div>
-+                </div>
-+                <div class="reel" data-reel="2">
-+                  <div class="symbol">💎</div>
-+                </div>
-+              </div>
-+              <div class="payout" id="payout">Bereit!</div>
-+              <div class="lost" id="lost">YOU LOST</div>
-+            </div>
-+
-+            <div class="controls">
-+              <button class="btn primary" id="spin">Spin (5 Credits)</button>
-+              <button class="btn" id="auto">Auto-Spin</button>
-+              <button class="btn ghost" id="stop">Stop</button>
-+            </div>
-+
-+            <div class="lever">
-+              <div class="lever-stick"></div>
-+              <div class="lever-ball"></div>
-+            </div>
-+          </div>
-+        </section>
-+
-+        <aside class="panel">
-+          <div class="credits">
-+            <span>Credits</span>
-+            <strong id="credits">50</strong>
-+          </div>
-+          <div class="rules">
-+            <h2>Auszahlung</h2>
-+            <ul>
-+              <li>🍒🍒 = 8, 🍒🍒🍒 = 25</li>
-+              <li>🔔🔔 = 10, 🔔🔔🔔 = 35</li>
-+              <li>⭐ ⭐ = 12, ⭐⭐⭐ = 45</li>
-+              <li>💎💎 = 20, 💎💎💎 = 80</li>
-+              <li>7️⃣7️⃣ = 30, 7️⃣7️⃣7️⃣ = 120</li>
-+            </ul>
-+            <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
-+          </div>
-+        </aside>
-+      </main>
-+    </div>
-+
-+    <script src="script.js"></script>
-+  </body>
-+</html>
- 
-EOF
-)
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Slot Maschine</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Neon Slot Maschine</h1>
+        <p>Drücke auf „Spin“ oder nutze „Auto-Spin“, um dein Glück zu testen.</p>
+      </header>
+
+      <main class="layout">
+        <section class="slot-machine">
+          <div class="cabinet">
+            <div class="marquee">
+              <span>Lucky Neon Slots</span>
+            </div>
+
+            <div class="screen" id="screen">
+              <div class="reels" aria-live="polite">
+                <div class="reel" data-reel="0">
+                  <div class="symbol">🍒</div>
+                </div>
+                <div class="reel" data-reel="1">
+                  <div class="symbol">⭐</div>
+                </div>
+                <div class="reel" data-reel="2">
+                  <div class="symbol">💎</div>
+                </div>
+              </div>
+              <div class="payout" id="payout">Bereit!</div>
+              <div class="lost" id="lost">YOU LOST</div>
+            </div>
+
+            <div class="controls">
+              <button class="btn icon" id="auto" aria-label="Auto-Spin">
+                <span class="spin-icon" aria-hidden="true">⟳</span>
+              </button>
+              <button class="btn ghost" id="stop">Stop</button>
+            </div>
+
+            <button class="lever" id="lever" aria-label="Hebel ziehen">
+              <div class="lever-stick"></div>
+              <div class="lever-ball"></div>
+            </button>
+
+            <div class="win" id="win">
+              <span id="win-amount">+0</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <div class="credits">
+            <span>Credits</span>
+            <strong id="credits">50</strong>
+          </div>
+          <div class="rules">
+            <h2>Auszahlung</h2>
+            <ul>
+              <li>🍒🍒 = 8, 🍒🍒🍒 = 25</li>
+              <li>🔔🔔 = 10, 🔔🔔🔔 = 35</li>
+              <li>⭐ ⭐ = 12, ⭐⭐⭐ = 45</li>
+              <li>💎💎 = 20, 💎💎💎 = 80</li>
+              <li>7️⃣7️⃣ = 30, 7️⃣7️⃣7️⃣ = 120</li>
+            </ul>
+            <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
