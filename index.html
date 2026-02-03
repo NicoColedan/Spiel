@@ -38,8 +38,8 @@
 
             <div class="status">
               <div class="status-item">
-                <span>Schulden</span>
-                <strong id="debt">50 €</strong>
+                <span>Guthaben</span>
+                <strong id="balance">-50 €</strong>
               </div>
               <div class="status-item">
                 <span>Spielzeit</span>
@@ -85,6 +85,7 @@
               <button class="inventory-slot" data-slot="2" aria-label="Inventar Slot 3"></button>
               <button class="inventory-slot" data-slot="3" aria-label="Inventar Slot 4"></button>
             </div>
+            <div class="passive-coins" id="passive-coins"></div>
           </div>
         </section>
 
@@ -131,8 +132,20 @@
           <div class="shop-section">
             <h3>Coin-Automat</h3>
             <button class="btn" id="roll-coins">Coin ziehen (50 €)</button>
+            <div class="coin-spinner" id="coin-spinner">🪙</div>
             <div class="coin-results" id="coin-results"></div>
             <button class="btn ghost" id="reroll-coins">Reroll (50 €)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-overlay" id="confirm-overlay" aria-hidden="true">
+        <div class="confirm-panel" role="dialog" aria-modal="true" aria-label="Bestätigen">
+          <h3>Kauf bestätigen?</h3>
+          <p id="confirm-text">Möchtest du diesen Coin kaufen?</p>
+          <div class="confirm-actions">
+            <button class="btn ghost" id="confirm-cancel">Abbrechen</button>
+            <button class="btn primary" id="confirm-buy">Bestätigen</button>
           </div>
         </div>
       </div>
