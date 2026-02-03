@@ -10,14 +10,14 @@
     <div class="page">
       <header>
         <h1>Nicos Abzockgerät</h1>
-        <p>Drücke auf „Spin“ oder nutze „Auto-Spin“, um dein Glück zu testen.</p>
+        <p>Betätige den Hebel und teste dein Glück.</p>
       </header>
 
       <main class="layout">
         <section class="slot-machine">
           <div class="cabinet">
             <div class="marquee">
-              <span>Lucky Neon Slots</span>
+              <span>Nicos Abzockgerät</span>
             </div>
 
             <div class="screen" id="screen">
@@ -37,6 +37,17 @@
             </div>
 
             <div class="controls">
+              <label class="stake">
+                <span>Einsatz</span>
+                <select id="stake">
+                  <option value="1">1 €</option>
+                  <option value="2">2 €</option>
+                  <option value="5" selected>5 €</option>
+                  <option value="10">10 €</option>
+                  <option value="20">20 €</option>
+                  <option value="50">50 €</option>
+                </select>
+              </label>
               <button class="btn icon" id="auto" aria-label="Auto-Spin">
                 <span class="spin-icon" aria-hidden="true">⟳</span>
               </button>
@@ -62,12 +73,12 @@
           <div class="rules">
             <h2>Auszahlung</h2>
             <ul>
-              <li>🍒🍒 = 4, 🍒🍒🍒 = 20</li>
-              <li>🔔🔔 = 5, 🔔🔔🔔 = 24</li>
-              <li>⭐⭐ = 6, ⭐⭐⭐ = 30</li>
-              <li>💎💎 = 10, 💎💎💎 = 50</li>
-              <li>7️⃣7️⃣ = 15, 7️⃣7️⃣7️⃣ = 70</li>
-              <li>❌❌ = 0, ❌❌❌ = Einsatz zurück</li>
+              <li>🍒🍒 = <span data-multiplier="1.2">6</span>, 🍒🍒🍒 = <span data-multiplier="4">20</span></li>
+              <li>🔔🔔 = <span data-multiplier="1.4">7</span>, 🔔🔔🔔 = <span data-multiplier="4.8">24</span></li>
+              <li>⭐⭐ = <span data-multiplier="1.6">8</span>, ⭐⭐⭐ = <span data-multiplier="6">30</span></li>
+              <li>💎💎 = <span data-multiplier="2.2">11</span>, 💎💎💎 = <span data-multiplier="10">50</span></li>
+              <li>7️⃣7️⃣ = <span data-multiplier="3">15</span>, 7️⃣7️⃣7️⃣ = <span data-multiplier="14">70</span></li>
+              <li>❌❌ = <span data-multiplier="0">0</span>, ❌❌❌ = <span data-refund>5</span></li>
             </ul>
             <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
           </div>
