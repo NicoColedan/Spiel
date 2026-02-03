@@ -29,6 +29,8 @@ const confirmOverlay = document.getElementById("confirm-overlay");
 const confirmText = document.getElementById("confirm-text");
 const confirmBuy = document.getElementById("confirm-buy");
 const confirmCancel = document.getElementById("confirm-cancel");
+const autoBuyCheckbox = document.getElementById("auto-buy");
+const restartButton = document.getElementById("restart");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -60,6 +62,7 @@ let pendingAction = null;
 let coinPrice = 25;
 let currentRollPrice = 25;
 let coinPurchased = false;
+let gameOver = false;
 
 const updateCredits = () => {
   creditsLabel.textContent = credits;
@@ -69,6 +72,13 @@ const updateCredits = () => {
 const updateBalance = () => {
   const formatted = balance > 0 ? `+${balance}` : `${balance}`;
   balanceLabel.textContent = `${formatted} €`;
+  if (balance <= -1000) {
+    gameOver = true;
+    autoSpin = false;
+    clearTimeout(spinInterval);
+    autoButton.textContent = "Auto-Spin";
+    setLostState(true);
+  }
 };
 
 const showToast = (message) => {
@@ -330,7 +340,7 @@ const renderCoinResults = (coins) => {
         addToInventory(pendingCoin);
         coinPrice *= 2;
         rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
-        rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+        rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
         coinPurchased = true;
         rerollCoinsButton.disabled = false;
         coinResults.innerHTML = "";
@@ -341,6 +351,7 @@ const renderCoinResults = (coins) => {
 };
 
 const rollCoins = (isReroll = false) => {
+  if (gameOver) return;
   if (!isReroll) {
     currentRollPrice = coinPrice;
   }
@@ -356,8 +367,10 @@ const rollCoins = (isReroll = false) => {
     const picks = Array.from({ length: 3 }, () => coinCatalog[Math.floor(Math.random() * coinCatalog.length)]);
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
-    coinPurchased = false;
-    rerollCoinsButton.disabled = true;
+    if (!isReroll) {
+      coinPurchased = false;
+      rerollCoinsButton.disabled = true;
+    }
     rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
     rollCoinsButton.textContent = `Coin ziehen (${currentRollPrice} Credits)`;
   }, 900);
@@ -396,6 +409,16 @@ const stopReelSpin = (index, finalSymbol) => {
 
 const spinReels = async () => {
   if (isSpinning) return;
+  if (gameOver) return;
+  if (autoBuyCheckbox.checked && credits < spinCost) {
+    const needed = spinCost - credits;
+    const cost = needed * 2;
+    balance -= cost;
+    credits += needed;
+    updateBalance();
+    updateCredits();
+    showToast(`Auto-Buy: +${needed} Credits`);
+  }
   if (credits < spinCost) {
     showToast("Um weiter zu spielen, besorge dir Credits.");
     autoSpin = false;
@@ -527,16 +550,11 @@ const spinReels = async () => {
     if (coin.remainingSpins > 0) {
       coin.remainingSpins -= 1;
     }
-    if (coin.remainingSpins < 0) {
+    if (coin.remainingSpins <= 0) {
       inventory[index] = null;
     }
   });
   renderInventory();
-
-  if (payoutValue > 0) {
-    balance += payoutValue;
-    updateBalance();
-  }
 
   isSpinning = false;
 
@@ -544,14 +562,9 @@ const spinReels = async () => {
     spinInterval = setTimeout(spinReels, 700);
   }
 
-  if (balance >= 0) {
-    showPayout("Schulden abbezahlt! Du hast gewonnen!");
-    autoSpin = false;
-  }
-
   if (balance <= -1000) {
     setLostState(true);
-    showPayout("Schuldenlimit erreicht!");
+    showPayout("Guthabenlimit erreicht!");
     autoSpin = false;
   }
 };
@@ -602,12 +615,43 @@ shopClose.addEventListener("click", () => {
   shopOverlay.setAttribute("aria-hidden", "true");
 });
 
+restartButton.addEventListener("click", () => {
+  autoSpin = false;
+  clearTimeout(spinInterval);
+  autoButton.textContent = "Auto-Spin";
+  credits = 25;
+  balance = -50;
+  freeSpins = 0;
+  winBonusMultiplier = 0;
+  winBonusTurns = 0;
+  doubleWinNext = false;
+  luckyPunchArmed = false;
+  lastSpinWin = false;
+  hourglassCounter = 0;
+  startTime = Date.now();
+  inventory.fill(null);
+  passiveInventory.fill(null);
+  passives.clear();
+  coinPrice = 25;
+  currentRollPrice = 25;
+  coinPurchased = false;
+  gameOver = false;
+  setLostState(false);
+  updateBalance();
+  updateCredits();
+  renderInventory();
+  rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
+  rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+  rerollCoinsButton.disabled = true;
+  showPayout("Bereit!");
+});
+
 creditRange.addEventListener("input", () => {
   creditNumber.value = creditRange.value;
 });
 
 creditNumber.addEventListener("input", () => {
-  const value = Math.max(1, Math.min(25, Number(creditNumber.value || 1)));
+  const value = Math.max(1, Math.min(500, Number(creditNumber.value || 1)));
   creditNumber.value = value;
   creditRange.value = value;
 });
@@ -662,8 +706,8 @@ inventorySlots.forEach((slot, index) => {
         coin.active = true;
         coin.onUse?.();
         if (coin.id === "bonuscoin") coin.remainingSpins = 5;
-        if (coin.id === "red-pepper") coin.remainingSpins = 3;
-        if (coin.id === "green-pepper") coin.remainingSpins = 5;
+        if (coin.id === "red-pepper") coin.remainingSpins = 4;
+        if (coin.id === "green-pepper") coin.remainingSpins = 6;
         if (coin.id === "golden-carrot") coin.remainingSpins = 1;
         if (coin.id === "lucky-punch") coin.remainingSpins = 1;
         if (coin.id === "fake-coin") {
