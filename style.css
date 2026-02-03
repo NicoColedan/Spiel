@@ -187,6 +187,34 @@ header p {
   display: flex;
 }
 
+.status {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.status-item {
+  background: rgba(8, 10, 20, 0.65);
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.status-item strong {
+  font-size: 1.2rem;
+  color: var(--accent-2);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .controls {
   display: flex;
   gap: 12px;
@@ -402,6 +430,171 @@ header p {
   background: rgba(255, 77, 148, 0.18);
   border: 1px solid rgba(255, 77, 148, 0.5);
   box-shadow: 0 0 18px rgba(255, 77, 148, 0.35);
+}
+
+.inventory {
+  margin-top: 20px;
+  background: rgba(8, 10, 20, 0.65);
+  border-radius: 18px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.inventory h3 {
+  margin: 0 0 12px;
+  color: var(--accent);
+}
+
+.inventory-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.inventory-slot {
+  height: 64px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 10, 20, 0.6);
+  cursor: pointer;
+  position: relative;
+}
+
+.coin {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  margin: 0 auto;
+  background: radial-gradient(circle at top, #fff7cf, #f7c34d 50%, #b17b24 90%);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.coin.passive {
+  box-shadow: 0 0 12px rgba(153, 102, 255, 0.9);
+}
+
+.coin.active {
+  box-shadow: 0 0 12px rgba(102, 255, 153, 0.9);
+}
+
+.shop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 20, 0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.shop-overlay.show {
+  display: flex;
+}
+
+.shop-panel {
+  width: min(760px, 92vw);
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.shop-section {
+  margin-bottom: 20px;
+}
+
+.shop-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 140px;
+  gap: 12px;
+  align-items: center;
+}
+
+.shop-row input {
+  width: 100%;
+}
+
+.shop-note {
+  opacity: 0.7;
+  margin: 8px 0 0;
+}
+
+.coin-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.coin-card {
+  background: rgba(8, 10, 20, 0.6);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.coin-card h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8, 10, 20, 0.9);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.inventory-slot:hover .tooltip,
+.coin-card:hover .tooltip {
+  opacity: 1;
+}
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: rgba(8, 10, 20, 0.9);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 30;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (max-width: 900px) {
