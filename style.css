@@ -355,6 +355,22 @@ header p {
   animation: win-pop 1.2s ease-out forwards;
 }
 
+.win.boost {
+  color: #fffbcc;
+  text-shadow: 0 0 35px rgba(255, 200, 0, 0.95);
+  animation: win-boost 0.9s ease-out infinite;
+}
+
+@keyframes win-boost {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
 @keyframes win-pop {
   0% {
     opacity: 0;
@@ -464,6 +480,18 @@ header p {
 .inventory-slot.small {
   width: 56px;
   height: 56px;
+}
+
+.inventory-slot .coin {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+}
+
+.inventory-slot.small .coin {
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
 }
 
 .coin {
