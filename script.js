@@ -19,6 +19,7 @@ let credits = 50;
 let isSpinning = false;
 let autoSpin = false;
 let spinInterval = null;
+const reelIntervals = new Map();
 
 const updateCredits = () => {
   creditsLabel.textContent = credits;
@@ -42,6 +43,28 @@ const applySymbol = (symbol, index) => {
   reels[index].innerHTML = `<div class="symbol">${symbol.icon}</div>`;
 };
 
+const startReelSpin = (index) => {
+  if (reelIntervals.has(index)) {
+    clearInterval(reelIntervals.get(index));
+  }
+  reels[index].classList.add("spinning");
+  const intervalId = setInterval(() => {
+    const randomSymbol = getRandomSymbol();
+    applySymbol(randomSymbol, index);
+  }, 80);
+  reelIntervals.set(index, intervalId);
+};
+
+const stopReelSpin = (index, finalSymbol) => {
+  const intervalId = reelIntervals.get(index);
+  if (intervalId) {
+    clearInterval(intervalId);
+    reelIntervals.delete(index);
+  }
+  reels[index].classList.remove("spinning");
+  applySymbol(finalSymbol, index);
+};
+
 const spinReels = async () => {
   if (isSpinning) return;
   if (credits < spinCost) {
@@ -57,18 +80,17 @@ const spinReels = async () => {
   updateCredits();
   showPayout("Rattersound läuft...");
 
-  reels.forEach((reel) => reel.classList.add("spinning"));
-
   const results = reels.map(() => getRandomSymbol());
   const stopDelays = [600, 950, 1300];
+
+  reels.forEach((_, index) => startReelSpin(index));
 
   await Promise.all(
     stopDelays.map(
       (delay, index) =>
         new Promise((resolve) => {
           setTimeout(() => {
-            reels[index].classList.remove("spinning");
-            applySymbol(results[index], index);
+            stopReelSpin(index, results[index]);
             resolve();
           }, delay);
         })
@@ -125,6 +147,13 @@ stopButton.addEventListener("click", () => {
   autoSpin = false;
   autoButton.textContent = "Auto-Spin";
   clearTimeout(spinInterval);
+  reelIntervals.forEach((intervalId) => clearInterval(intervalId));
+  reelIntervals.clear();
+  reels.forEach((reel, index) => {
+    reel.classList.remove("spinning");
+    applySymbol(getRandomSymbol(), index);
+  });
+  isSpinning = false;
 });
 
 updateCredits();
