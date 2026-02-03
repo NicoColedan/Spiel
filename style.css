@@ -189,6 +189,21 @@ header p {
   display: flex;
 }
 
+.lost-content {
+  text-align: center;
+  letter-spacing: normal;
+}
+
+.lost-content h2 {
+  margin: 0 0 8px;
+}
+
+.lost-content p {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
 .status {
   display: flex;
   justify-content: space-between;
@@ -469,7 +484,7 @@ header p {
 }
 
 .inventory-slot {
-  height: 72px;
+  height: 64px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(8, 10, 20, 0.6);
@@ -483,9 +498,9 @@ header p {
 }
 
 .inventory-slot .coin {
-  width: 44px;
-  height: 44px;
-  font-size: 1.1rem;
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
 }
 
 .inventory-slot.small .coin {
@@ -598,6 +613,15 @@ header p {
 .shop-note {
   opacity: 0.7;
   margin: 8px 0 0;
+}
+
+.shop-auto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .coin-results {
