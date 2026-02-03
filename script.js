@@ -7,17 +7,20 @@ const lostOverlay = document.getElementById("lost");
 const leverButton = document.getElementById("lever");
 const winOverlay = document.getElementById("win");
 const winAmount = document.getElementById("win-amount");
+const stakeSelect = document.getElementById("stake");
+const payoutMultipliers = Array.from(document.querySelectorAll("[data-multiplier]"));
+const payoutRefund = document.querySelector("[data-refund]");
 
 const symbols = [
-  { icon: "🍒", two: 4, three: 20 },
-  { icon: "🔔", two: 5, three: 24 },
-  { icon: "⭐", two: 6, three: 30 },
-  { icon: "💎", two: 10, three: 50 },
-  { icon: "7️⃣", two: 15, three: 70 },
-  { icon: "❌", two: 0, three: "refund" },
+  { icon: "🍒", twoMult: 1.2, threeMult: 4 },
+  { icon: "🔔", twoMult: 1.4, threeMult: 4.8 },
+  { icon: "⭐", twoMult: 1.6, threeMult: 6 },
+  { icon: "💎", twoMult: 2.2, threeMult: 10 },
+  { icon: "7️⃣", twoMult: 3, threeMult: 14 },
+  { icon: "❌", twoMult: 0, threeMult: "refund" },
 ];
 
-const spinCost = 5;
+let spinCost = 5;
 let credits = 50;
 let isSpinning = false;
 let autoSpin = false;
@@ -26,6 +29,7 @@ const reelIntervals = new Map();
 
 const updateCredits = () => {
   creditsLabel.textContent = credits;
+  updateStakeOptions();
 };
 
 const showPayout = (message, highlight = false) => {
@@ -43,6 +47,37 @@ const showWin = (amount) => {
   winOverlay.classList.remove("show");
   void winOverlay.offsetWidth;
   winOverlay.classList.add("show");
+};
+
+const updateStakeOptions = () => {
+  const options = Array.from(stakeSelect.options);
+  options.forEach((option) => {
+    const value = Number(option.value);
+    option.disabled = value > credits;
+  });
+
+  if (Number(stakeSelect.value) > credits) {
+    const available = options
+      .filter((option) => !option.disabled)
+      .map((option) => Number(option.value));
+    const fallback = available.length ? Math.max(...available) : 1;
+    stakeSelect.value = String(fallback);
+  }
+
+  spinCost = Number(stakeSelect.value);
+  updatePayoutTable();
+};
+
+const updatePayoutTable = () => {
+  payoutMultipliers.forEach((entry) => {
+    const multiplier = Number(entry.dataset.multiplier);
+    const value = Math.round(multiplier * spinCost);
+    entry.textContent = value;
+  });
+
+  if (payoutRefund) {
+    payoutRefund.textContent = spinCost;
+  }
 };
 
 const getRandomSymbol = () => {
@@ -122,12 +157,13 @@ const spinReels = async () => {
     const [icon, count] = hit;
     const symbolInfo = symbols.find((symbol) => symbol.icon === icon);
     if (symbolInfo) {
-      if (count === 3 && symbolInfo.three === "refund") {
+      if (count === 3 && symbolInfo.threeMult === "refund") {
         payoutValue = spinCost;
         credits += payoutValue;
         message = `❌❌❌ Einsatz zurück! +${payoutValue}`;
       } else {
-        payoutValue = count === 3 ? symbolInfo.three : symbolInfo.two;
+        const multiplier = count === 3 ? symbolInfo.threeMult : symbolInfo.twoMult;
+        payoutValue = Math.round(multiplier * spinCost);
         if (payoutValue > 0) {
           credits += payoutValue;
         }
@@ -168,6 +204,10 @@ autoButton.addEventListener("click", () => {
     autoButton.textContent = "Auto-Spin";
     clearTimeout(spinInterval);
   }
+});
+
+stakeSelect.addEventListener("change", () => {
+  updateStakeOptions();
 });
 
 stopButton.addEventListener("click", () => {
