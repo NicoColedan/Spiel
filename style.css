@@ -54,7 +54,7 @@ header p {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 24px;
   align-items: center;
 }
@@ -62,7 +62,7 @@ header p {
 .slot-machine {
   background: linear-gradient(180deg, #151a32, #0e1224);
   border-radius: 24px;
-  padding: 24px;
+  padding: 32px;
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
@@ -71,11 +71,11 @@ header p {
 .cabinet {
   position: relative;
   border-radius: 26px;
-  padding: 20px;
+  padding: 26px;
   background: linear-gradient(180deg, rgba(255, 77, 148, 0.08), rgba(77, 215, 255, 0.08));
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
-  width: min(520px, 100%);
+  width: min(640px, 100%);
 }
 
 .marquee {
@@ -104,20 +104,20 @@ header p {
 .reels {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 20px;
   align-items: center;
   margin-bottom: 20px;
 }
 
 .reel {
-  height: 140px;
+  height: 170px;
   border-radius: 16px;
   background: rgba(8, 10, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  font-size: 3.4rem;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
@@ -196,10 +196,10 @@ header p {
 
 .lever {
   position: absolute;
-  right: -26px;
-  top: 110px;
-  width: 44px;
-  height: 180px;
+  right: -30px;
+  top: 120px;
+  width: 52px;
+  height: 190px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -210,8 +210,8 @@ header p {
   position: absolute;
   bottom: 16px;
   left: 50%;
-  width: 10px;
-  height: 120px;
+  width: 12px;
+  height: 130px;
   background: linear-gradient(180deg, #e0e2f0, #848aa3);
   transform: translateX(-50%);
   border-radius: 6px;
@@ -223,8 +223,8 @@ header p {
   position: absolute;
   top: 0;
   left: 50%;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   background: radial-gradient(circle at 30% 30%, #fff3c7, #ffaf3f);
   transform: translateX(-50%);
   border-radius: 50%;
@@ -233,11 +233,11 @@ header p {
 }
 
 .lever.pulled .lever-stick {
-  transform: translateX(-50%) rotate(12deg) translateY(6px);
+  transform: translateX(-50%) scaleY(0.88);
 }
 
 .lever.pulled .lever-ball {
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%) translateY(28px);
 }
 
 .btn {
@@ -370,5 +370,16 @@ header p {
   .lever {
     position: static;
     margin: 16px auto 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .cabinet {
+    width: 100%;
+  }
+
+  .reel {
+    height: 150px;
+    font-size: 3rem;
   }
 }
