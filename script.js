@@ -9,11 +9,12 @@ const winOverlay = document.getElementById("win");
 const winAmount = document.getElementById("win-amount");
 
 const symbols = [
-  { icon: "🍒", two: 8, three: 25 },
-  { icon: "🔔", two: 10, three: 35 },
-  { icon: "⭐", two: 12, three: 45 },
-  { icon: "💎", two: 20, three: 80 },
-  { icon: "7️⃣", two: 30, three: 120 },
+  { icon: "🍒", two: 4, three: 20 },
+  { icon: "🔔", two: 5, three: 24 },
+  { icon: "⭐", two: 6, three: 30 },
+  { icon: "💎", two: 10, three: 50 },
+  { icon: "7️⃣", two: 15, three: 70 },
+  { icon: "❌", two: 0, three: "refund" },
 ];
 
 const spinCost = 5;
@@ -121,9 +122,22 @@ const spinReels = async () => {
     const [icon, count] = hit;
     const symbolInfo = symbols.find((symbol) => symbol.icon === icon);
     if (symbolInfo) {
-      payoutValue = count === 3 ? symbolInfo.three : symbolInfo.two;
-      credits += payoutValue;
-      message = count === 3 ? `Jackpot ${icon} ${icon} ${icon}! +${payoutValue}` : `Treffer ${icon} ${icon}! +${payoutValue}`;
+      if (count === 3 && symbolInfo.three === "refund") {
+        payoutValue = spinCost;
+        credits += payoutValue;
+        message = `❌❌❌ Einsatz zurück! +${payoutValue}`;
+      } else {
+        payoutValue = count === 3 ? symbolInfo.three : symbolInfo.two;
+        if (payoutValue > 0) {
+          credits += payoutValue;
+        }
+        message =
+          payoutValue > 0
+            ? count === 3
+              ? `Jackpot ${icon} ${icon} ${icon}! +${payoutValue}`
+              : `Treffer ${icon} ${icon}! +${payoutValue}`
+            : "Leider kein Gewinn.";
+      }
     }
   }
 
