@@ -20,7 +20,8 @@ const rollCoinsButton = document.getElementById("roll-coins");
 const rerollCoinsButton = document.getElementById("reroll-coins");
 const coinResults = document.getElementById("coin-results");
 const coinSpinner = document.getElementById("coin-spinner");
-const inventorySlots = Array.from(document.querySelectorAll(".inventory-slot"));
+const inventorySlots = Array.from(document.querySelectorAll(".inventory-slot[data-slot]"));
+const passiveSlots = Array.from(document.querySelectorAll(".inventory-slot[data-passive-slot]"));
 const passiveCoins = document.getElementById("passive-coins");
 const balanceLabel = document.getElementById("balance");
 const timerLabel = document.getElementById("timer");
@@ -55,6 +56,8 @@ let lastSpinWin = false;
 let hourglassCounter = 0;
 let startTime = Date.now();
 let pendingCoin = null;
+let coinPrice = 25;
+let coinPurchased = false;
 
 const updateCredits = () => {
   creditsLabel.textContent = credits;
@@ -150,7 +153,7 @@ const coinCatalog = [
     name: "Bonuscoin",
     type: "passive",
     icon: "✨",
-    description: "Schenkt dir 5 freie Runden. (Permanent)",
+    description: "Schenkt dir 5 freie Runden.",
     onGain: () => {
       freeSpins += 5;
       showToast("Bonuscoin: +5 Freispiele");
@@ -161,28 +164,28 @@ const coinCatalog = [
     name: "Lucky Cat",
     type: "passive",
     icon: "🐱",
-    description: "Jackpot (3x 7) zahlt den Betrag doppelt. (Permanent)",
+    description: "Jackpot (3x 7) zahlt den Betrag doppelt.",
   },
   {
     id: "lucky-dog",
     name: "Lucky Dog",
     type: "passive",
     icon: "🐶",
-    description: "Bei jedem 3er-Gewinn +10% Bonus. (Permanent)",
+    description: "Bei jedem 3er-Gewinn +10% Bonus.",
   },
   {
     id: "hourglass",
     name: "Hourglass",
     type: "passive",
     icon: "⏳",
-    description: "Alle 10 Minuten +10 Credits. (Permanent)",
+    description: "Alle 10 Minuten +10 Credits.",
   },
   {
     id: "fake-coin",
     name: "Fake Coin",
     type: "active",
     icon: "🃏",
-    description: "Versuch es selbst. (Einmalig)",
+    description: "Versuch es selbst.",
     onUse: () => {
       showToast("Fake Coin... nichts passiert.");
     },
@@ -192,7 +195,7 @@ const coinCatalog = [
     name: "Red Pepper",
     type: "active",
     icon: "🌶️",
-    description: "+20% Gewinn für 3 Runden. (3 Spins)",
+    description: "+20% Gewinn für 3 Runden.",
     onUse: () => {
       winBonusMultiplier += 0.2;
       winBonusTurns = Math.max(winBonusTurns, 3);
@@ -204,7 +207,7 @@ const coinCatalog = [
     name: "Golden Carrot",
     type: "active",
     icon: "🥕",
-    description: "Nächster Gewinn wird verdoppelt. (1 Spin)",
+    description: "Nächster Gewinn wird verdoppelt.",
     onUse: () => {
       doubleWinNext = true;
       showToast("Golden Carrot aktiviert!");
@@ -215,7 +218,7 @@ const coinCatalog = [
     name: "Lucky Punch",
     type: "active",
     icon: "🥊",
-    description: "Kein Gewinn? +25 Credits. Gewinn? Kein Bonus. (1 Spin)",
+    description: "Kein Gewinn? +25 Credits. Gewinn? Kein Bonus.",
     onUse: () => {
       luckyPunchArmed = true;
       showToast("Lucky Punch bereit.");
@@ -226,7 +229,7 @@ const coinCatalog = [
     name: "Green Pepper",
     type: "active",
     icon: "🫑",
-    description: "+10% Gewinn für 5 Runden. (5 Spins)",
+    description: "+10% Gewinn für 5 Runden.",
     onUse: () => {
       winBonusMultiplier += 0.1;
       winBonusTurns = Math.max(winBonusTurns, 5);
@@ -237,7 +240,7 @@ const coinCatalog = [
 
 const inventory = new Array(4).fill(null);
 const passives = new Set();
-const passiveInventory = [];
+const passiveInventory = new Array(2).fill(null);
 
 const renderInventory = () => {
   inventorySlots.forEach((slot, index) => {
@@ -254,19 +257,18 @@ const renderInventory = () => {
     slot.appendChild(tooltip);
   });
 
-  passiveCoins.innerHTML = "";
-  passiveInventory.forEach((coin) => {
+  passiveSlots.forEach((slot, index) => {
+    slot.innerHTML = "";
+    const coin = passiveInventory[index];
+    if (!coin) return;
     const coinEl = document.createElement("div");
     coinEl.className = "coin passive";
     coinEl.textContent = coin.icon;
     const tooltip = document.createElement("div");
     tooltip.className = "tooltip";
-    tooltip.textContent = coin.description;
-    const wrapper = document.createElement("div");
-    wrapper.style.position = "relative";
-    wrapper.appendChild(coinEl);
-    wrapper.appendChild(tooltip);
-    passiveCoins.appendChild(wrapper);
+    tooltip.textContent = `${coin.description} (Permanent)`;
+    slot.appendChild(coinEl);
+    slot.appendChild(tooltip);
   });
 };
 
@@ -276,9 +278,14 @@ const addToInventory = (coin) => {
       showToast(`${coin.name} ist bereits aktiv.`);
       return;
     }
+    const emptyPassiveIndex = passiveInventory.findIndex((slot) => !slot);
+    if (emptyPassiveIndex === -1) {
+      showToast("Passive Slots voll. Erst verkaufen, um Platz zu schaffen.");
+      return;
+    }
     passives.add(coin.id);
     coin.onGain?.();
-    passiveInventory.push(coin);
+    passiveInventory[emptyPassiveIndex] = coin;
     showToast(`${coin.name} aktiviert.`);
     renderInventory();
     return;
@@ -303,11 +310,14 @@ const renderCoinResults = (coins) => {
     coinEl.textContent = coin.icon;
     const name = document.createElement("h4");
     name.textContent = coin.name;
+    const desc = document.createElement("p");
+    desc.textContent = `${coin.description} (${coin.type === "passive" ? "Permanent" : "Einmalig"})`;
     const tooltip = document.createElement("div");
     tooltip.className = "tooltip";
-    tooltip.textContent = coin.description;
+    tooltip.textContent = `${coin.description} (${coin.type === "passive" ? "Permanent" : "Einmalig"})`;
     card.appendChild(coinEl);
     card.appendChild(name);
+    card.appendChild(desc);
     card.appendChild(tooltip);
     card.addEventListener("click", () => {
       pendingCoin = coin;
@@ -320,14 +330,22 @@ const renderCoinResults = (coins) => {
 };
 
 const rollCoins = () => {
-  balance -= 50;
-  updateBalance();
+  if (credits < coinPrice) {
+    showToast("Nicht genug Credits für Coin ziehen.");
+    return;
+  }
+  credits -= coinPrice;
+  updateCredits();
   coinResults.innerHTML = "";
   coinSpinner.classList.add("show");
   setTimeout(() => {
     const picks = Array.from({ length: 3 }, () => coinCatalog[Math.floor(Math.random() * coinCatalog.length)]);
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
+    coinPurchased = false;
+    rerollCoinsButton.disabled = true;
+    rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+    rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
   }, 900);
 };
 
@@ -584,25 +602,96 @@ buyCreditsButton.addEventListener("click", () => {
 });
 
 rollCoinsButton.addEventListener("click", rollCoins);
-rerollCoinsButton.addEventListener("click", rollCoins);
+rerollCoinsButton.addEventListener("click", () => {
+  if (!coinPurchased) {
+    showToast("Reroll erst nach einem Kauf möglich.");
+    return;
+  }
+  rollCoins();
+});
 
 inventorySlots.forEach((slot, index) => {
   slot.addEventListener("click", () => {
     const coin = inventory[index];
     if (!coin) return;
-    if (!coin.active) {
-      coin.active = true;
-      coin.onUse?.();
-      if (coin.id === "red-pepper") coin.remainingSpins = 3;
-      if (coin.id === "green-pepper") coin.remainingSpins = 5;
-      if (coin.id === "golden-carrot") coin.remainingSpins = 1;
-      if (coin.id === "lucky-punch") coin.remainingSpins = 1;
-      if (coin.id === "fake-coin") {
-        coin.remainingSpins = 0;
-        inventory[index] = null;
-      }
-      renderInventory();
+    const existing = slot.querySelector(".coin-actions");
+    if (existing) {
+      existing.remove();
+      return;
     }
+
+    const actions = document.createElement("div");
+    actions.className = "coin-actions show";
+    const activate = document.createElement("button");
+    activate.className = "btn primary";
+    activate.textContent = "Aktivieren";
+    const sell = document.createElement("button");
+    sell.className = "btn ghost";
+    sell.textContent = "Verkaufen (10 Credits)";
+
+    if (coin.active) {
+      sell.disabled = true;
+    }
+
+    activate.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!coin.active) {
+        coin.active = true;
+        coin.onUse?.();
+        if (coin.id === "red-pepper") coin.remainingSpins = 3;
+        if (coin.id === "green-pepper") coin.remainingSpins = 5;
+        if (coin.id === "golden-carrot") coin.remainingSpins = 1;
+        if (coin.id === "lucky-punch") coin.remainingSpins = 1;
+        if (coin.id === "fake-coin") {
+          coin.remainingSpins = 0;
+          inventory[index] = null;
+        }
+        renderInventory();
+      }
+      actions.remove();
+    });
+
+    sell.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (coin.active) return;
+      credits += 10;
+      inventory[index] = null;
+      updateCredits();
+      renderInventory();
+      actions.remove();
+    });
+
+    actions.appendChild(activate);
+    actions.appendChild(sell);
+    slot.appendChild(actions);
+  });
+});
+
+passiveSlots.forEach((slot, index) => {
+  slot.addEventListener("click", () => {
+    const coin = passiveInventory[index];
+    if (!coin) return;
+    const existing = slot.querySelector(".coin-actions");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const actions = document.createElement("div");
+    actions.className = "coin-actions show";
+    const sell = document.createElement("button");
+    sell.className = "btn ghost";
+    sell.textContent = "Verkaufen (10 Credits)";
+    sell.addEventListener("click", (event) => {
+      event.stopPropagation();
+      credits += 10;
+      passives.delete(coin.id);
+      passiveInventory[index] = null;
+      updateCredits();
+      renderInventory();
+      actions.remove();
+    });
+    actions.appendChild(sell);
+    slot.appendChild(actions);
   });
 });
 
@@ -614,7 +703,28 @@ confirmCancel.addEventListener("click", () => {
 
 confirmBuy.addEventListener("click", () => {
   if (pendingCoin) {
+    if (pendingCoin.type === "passive") {
+      const emptyPassiveIndex = passiveInventory.findIndex((slot) => !slot);
+      if (emptyPassiveIndex === -1) {
+        showToast("Passive Slots voll. Erst verkaufen, um Platz zu schaffen.");
+        pendingCoin = null;
+        confirmOverlay.classList.remove("show");
+        confirmOverlay.setAttribute("aria-hidden", "true");
+        return;
+      }
+    } else if (inventory.every((slot) => slot)) {
+      showToast("Inventar voll. Erst verkaufen oder nutzen.");
+      pendingCoin = null;
+      confirmOverlay.classList.remove("show");
+      confirmOverlay.setAttribute("aria-hidden", "true");
+      return;
+    }
     addToInventory(pendingCoin);
+    coinPrice *= 2;
+    rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
+    rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+    coinPurchased = true;
+    rerollCoinsButton.disabled = false;
   }
   pendingCoin = null;
   coinResults.innerHTML = "";
@@ -626,3 +736,6 @@ setInterval(updateTimer, 1000);
 updateBalance();
 updateCredits();
 renderInventory();
+rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
+rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+rerollCoinsButton.disabled = true;
