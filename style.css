@@ -66,6 +66,8 @@ header p {
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .cabinet {
@@ -433,7 +435,6 @@ header p {
 }
 
 .inventory {
-  margin-top: 20px;
   background: rgba(8, 10, 20, 0.65);
   border-radius: 18px;
   padding: 16px;
@@ -452,8 +453,8 @@ header p {
 }
 
 .inventory-slot {
-  height: 64px;
-  border-radius: 12px;
+  height: 72px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(8, 10, 20, 0.6);
   cursor: pointer;
@@ -479,6 +480,17 @@ header p {
 
 .coin.active {
   box-shadow: 0 0 12px rgba(102, 255, 153, 0.9);
+}
+
+.coin.burning {
+  box-shadow: 0 0 16px rgba(255, 120, 0, 0.9);
+}
+
+.passive-coins {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .shop-overlay {
@@ -538,6 +550,30 @@ header p {
   margin: 16px 0;
 }
 
+.coin-spinner {
+  font-size: 2rem;
+  text-align: center;
+  margin: 12px 0;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.coin-spinner.show {
+  opacity: 1;
+  transform: scale(1);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
 .coin-card {
   background: rgba(8, 10, 20, 0.6);
   border-radius: 16px;
@@ -595,6 +631,36 @@ header p {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 20, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+}
+
+.confirm-overlay.show {
+  display: flex;
+}
+
+.confirm-panel {
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: min(420px, 90vw);
+  text-align: center;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
 }
 
 @media (max-width: 900px) {
