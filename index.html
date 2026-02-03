@@ -33,7 +33,13 @@
                 </div>
               </div>
               <div class="payout" id="payout">Bereit!</div>
-              <div class="lost" id="lost">YOU LOST</div>
+              <div class="lost" id="lost">
+                <div class="lost-content">
+                  <h2>Game Over</h2>
+                  <p>Dein Guthaben ist unter -1000 €.</p>
+                  <button class="btn primary" id="restart">Neustart</button>
+                </div>
+              </div>
             </div>
 
             <div class="status">
@@ -125,10 +131,14 @@
           <div class="shop-section">
             <h3>Credits kaufen</h3>
             <div class="shop-row">
-              <input type="range" id="credit-range" min="1" max="25" value="1" />
-              <input type="number" id="credit-number" min="1" max="25" value="1" />
+              <input type="range" id="credit-range" min="1" max="500" value="1" />
+              <input type="number" id="credit-number" min="1" max="500" value="1" />
               <button class="btn primary" id="buy-credits">Kaufen</button>
             </div>
+            <label class="shop-auto">
+              <input type="checkbox" id="auto-buy" />
+              Credits automatisch nachkaufen
+            </label>
             <p class="shop-note">Preis: 2 € pro Credit.</p>
           </div>
 
