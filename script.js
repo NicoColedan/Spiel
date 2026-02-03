@@ -10,6 +10,7 @@ const winAmount = document.getElementById("win-amount");
 const stakeSelect = document.getElementById("stake");
 const payoutMultipliers = Array.from(document.querySelectorAll("[data-multiplier]"));
 const payoutRefund = document.querySelector("[data-refund]");
+const shopButton = document.getElementById("shop");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -221,6 +222,13 @@ stopButton.addEventListener("click", () => {
     applySymbol(getRandomSymbol(), index);
   });
   isSpinning = false;
+});
+
+shopButton.addEventListener("click", () => {
+  const shopWindow = window.open("", "slot-shop", "width=480,height=360");
+  if (!shopWindow) return;
+  shopWindow.document.write("<!doctype html><title>Shop</title><body style=\"margin:0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:2.5rem;\">SHOP</body>");
+  shopWindow.document.close();
 });
 
 updateCredits();
