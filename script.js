@@ -56,7 +56,9 @@ let lastSpinWin = false;
 let hourglassCounter = 0;
 let startTime = Date.now();
 let pendingCoin = null;
+let pendingAction = null;
 let coinPrice = 25;
+let currentRollPrice = 25;
 let coinPurchased = false;
 
 const updateCredits = () => {
@@ -81,6 +83,13 @@ const showToast = (message) => {
   setTimeout(() => toast.classList.remove("show"), 1800);
 };
 
+const openConfirm = (text, action) => {
+  confirmText.textContent = text;
+  pendingAction = action;
+  confirmOverlay.classList.add("show");
+  confirmOverlay.setAttribute("aria-hidden", "false");
+};
+
 const showPayout = (message, highlight = false) => {
   payout.textContent = message;
   payout.style.color = highlight ? "#ffe680" : "#4dd7ff";
@@ -99,20 +108,6 @@ const showWin = (amount) => {
 };
 
 const updateStakeOptions = () => {
-  const options = Array.from(stakeSelect.options);
-  options.forEach((option) => {
-    const value = Number(option.value);
-    option.disabled = value > credits;
-  });
-
-  if (Number(stakeSelect.value) > credits) {
-    const available = options
-      .filter((option) => !option.disabled)
-      .map((option) => Number(option.value));
-    const fallback = available.length ? Math.max(...available) : 1;
-    stakeSelect.value = String(fallback);
-  }
-
   spinCost = Number(stakeSelect.value);
   updatePayoutTable();
 };
@@ -151,12 +146,12 @@ const coinCatalog = [
   {
     id: "bonuscoin",
     name: "Bonuscoin",
-    type: "passive",
+    type: "active",
     icon: "✨",
-    description: "Schenkt dir 5 freie Runden.",
-    onGain: () => {
+    description: "Nächste 5 Spins sind kostenlos.",
+    onUse: () => {
       freeSpins += 5;
-      showToast("Bonuscoin: +5 Freispiele");
+      showToast("Bonuscoin aktiviert: 5 Freispiele");
     },
   },
   {
@@ -321,20 +316,39 @@ const renderCoinResults = (coins) => {
     card.appendChild(tooltip);
     card.addEventListener("click", () => {
       pendingCoin = coin;
-      confirmText.textContent = `Möchtest du ${coin.name} kaufen?`;
-      confirmOverlay.classList.add("show");
-      confirmOverlay.setAttribute("aria-hidden", "false");
+      openConfirm(`Möchtest du ${coin.name} kaufen?`, () => {
+        if (pendingCoin.type === "passive") {
+          const emptyPassiveIndex = passiveInventory.findIndex((slot) => !slot);
+          if (emptyPassiveIndex === -1) {
+            showToast("Passive Slots voll. Erst verkaufen, um Platz zu schaffen.");
+            return;
+          }
+        } else if (inventory.every((slot) => slot)) {
+          showToast("Inventar voll. Erst verkaufen oder nutzen.");
+          return;
+        }
+        addToInventory(pendingCoin);
+        coinPrice *= 2;
+        rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
+        rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+        coinPurchased = true;
+        rerollCoinsButton.disabled = false;
+        coinResults.innerHTML = "";
+      });
     });
     coinResults.appendChild(card);
   });
 };
 
-const rollCoins = () => {
-  if (credits < coinPrice) {
+const rollCoins = (isReroll = false) => {
+  if (!isReroll) {
+    currentRollPrice = coinPrice;
+  }
+  if (credits < currentRollPrice) {
     showToast("Nicht genug Credits für Coin ziehen.");
     return;
   }
-  credits -= coinPrice;
+  credits -= currentRollPrice;
   updateCredits();
   coinResults.innerHTML = "";
   coinSpinner.classList.add("show");
@@ -344,8 +358,8 @@ const rollCoins = () => {
     coinSpinner.classList.remove("show");
     coinPurchased = false;
     rerollCoinsButton.disabled = true;
-    rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
-    rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
+    rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
+    rollCoinsButton.textContent = `Coin ziehen (${currentRollPrice} Credits)`;
   }, 900);
 };
 
@@ -383,7 +397,7 @@ const stopReelSpin = (index, finalSymbol) => {
 const spinReels = async () => {
   if (isSpinning) return;
   if (credits < spinCost) {
-    setLostState(true);
+    showToast("Um weiter zu spielen, besorge dir Credits.");
     autoSpin = false;
     autoButton.textContent = "Auto-Spin";
     return;
@@ -395,8 +409,8 @@ const spinReels = async () => {
     freeSpins -= 1;
   } else {
     credits -= spinCost;
+    balance -= spinCost;
   }
-  balance -= 10;
   updateCredits();
   updateBalance();
   showPayout("Rattersound läuft...");
@@ -427,6 +441,7 @@ const spinReels = async () => {
   let payoutValue = 0;
   let message = "Leider kein Gewinn.";
   let matchCount = 0;
+  let bonusTriggered = false;
 
   const hit = Object.entries(counts).find(([, count]) => count >= 2);
   if (hit) {
@@ -458,12 +473,14 @@ const spinReels = async () => {
     const bonus = Math.round(payoutValue * 0.1);
     payoutValue += bonus;
     credits += bonus;
+    bonusTriggered = true;
     showToast(`Lucky Dog +${bonus}`);
   }
 
   if (matchCount === 3 && symbolsOnly.every((icon) => icon === "7️⃣") && passives.has("lucky-cat")) {
     credits += payoutValue;
     payoutValue *= 2;
+    bonusTriggered = true;
     showToast("Lucky Cat: Jackpot verdoppelt!");
   }
 
@@ -471,6 +488,7 @@ const spinReels = async () => {
     if (payoutValue > 0) {
       credits += payoutValue;
       payoutValue *= 2;
+      bonusTriggered = true;
       showToast("Golden Carrot: Gewinn verdoppelt!");
     }
     doubleWinNext = false;
@@ -481,6 +499,7 @@ const spinReels = async () => {
       const bonus = Math.round(payoutValue * winBonusMultiplier);
       credits += bonus;
       payoutValue += bonus;
+      bonusTriggered = true;
     }
     winBonusTurns -= 1;
     if (winBonusTurns === 0) {
@@ -491,6 +510,7 @@ const spinReels = async () => {
   lastSpinWin = payoutValue > 0;
   if (!lastSpinWin && luckyPunchArmed) {
     credits += luckyPunchReward;
+    bonusTriggered = true;
     showToast(`Lucky Punch +${luckyPunchReward}`);
     luckyPunchArmed = false;
   } else if (lastSpinWin && luckyPunchArmed) {
@@ -499,6 +519,7 @@ const spinReels = async () => {
 
   updateCredits();
   showPayout(message, payoutValue > 0);
+  winOverlay.classList.toggle("boost", bonusTriggered);
   showWin(payoutValue);
 
   inventory.forEach((coin, index) => {
@@ -506,7 +527,7 @@ const spinReels = async () => {
     if (coin.remainingSpins > 0) {
       coin.remainingSpins -= 1;
     }
-    if (coin.remainingSpins === 0) {
+    if (coin.remainingSpins < 0) {
       inventory[index] = null;
     }
   });
@@ -594,11 +615,13 @@ creditNumber.addEventListener("input", () => {
 buyCreditsButton.addEventListener("click", () => {
   const amount = Number(creditNumber.value);
   const cost = amount * 2;
-  balance -= cost;
-  credits += amount;
-  updateBalance();
-  updateCredits();
-  showToast(`+${amount} Credits gekauft`);
+  openConfirm(`Credits kaufen? (${amount} Credits für ${cost} €)`, () => {
+    balance -= cost;
+    credits += amount;
+    updateBalance();
+    updateCredits();
+    showToast(`+${amount} Credits gekauft`);
+  });
 });
 
 rollCoinsButton.addEventListener("click", rollCoins);
@@ -607,7 +630,7 @@ rerollCoinsButton.addEventListener("click", () => {
     showToast("Reroll erst nach einem Kauf möglich.");
     return;
   }
-  rollCoins();
+  rollCoins(true);
 });
 
 inventorySlots.forEach((slot, index) => {
@@ -638,13 +661,13 @@ inventorySlots.forEach((slot, index) => {
       if (!coin.active) {
         coin.active = true;
         coin.onUse?.();
+        if (coin.id === "bonuscoin") coin.remainingSpins = 5;
         if (coin.id === "red-pepper") coin.remainingSpins = 3;
         if (coin.id === "green-pepper") coin.remainingSpins = 5;
         if (coin.id === "golden-carrot") coin.remainingSpins = 1;
         if (coin.id === "lucky-punch") coin.remainingSpins = 1;
         if (coin.id === "fake-coin") {
-          coin.remainingSpins = 0;
-          inventory[index] = null;
+          coin.remainingSpins = 1;
         }
         renderInventory();
       }
@@ -654,10 +677,12 @@ inventorySlots.forEach((slot, index) => {
     sell.addEventListener("click", (event) => {
       event.stopPropagation();
       if (coin.active) return;
-      credits += 10;
-      inventory[index] = null;
-      updateCredits();
-      renderInventory();
+      openConfirm("Coin für 10 Credits verkaufen?", () => {
+        credits += 10;
+        inventory[index] = null;
+        updateCredits();
+        renderInventory();
+      });
       actions.remove();
     });
 
@@ -683,11 +708,13 @@ passiveSlots.forEach((slot, index) => {
     sell.textContent = "Verkaufen (10 Credits)";
     sell.addEventListener("click", (event) => {
       event.stopPropagation();
-      credits += 10;
-      passives.delete(coin.id);
-      passiveInventory[index] = null;
-      updateCredits();
-      renderInventory();
+      openConfirm("Passiven Coin für 10 Credits verkaufen?", () => {
+        credits += 10;
+        passives.delete(coin.id);
+        passiveInventory[index] = null;
+        updateCredits();
+        renderInventory();
+      });
       actions.remove();
     });
     actions.appendChild(sell);
@@ -699,34 +726,13 @@ confirmCancel.addEventListener("click", () => {
   confirmOverlay.classList.remove("show");
   confirmOverlay.setAttribute("aria-hidden", "true");
   pendingCoin = null;
+  pendingAction = null;
 });
 
 confirmBuy.addEventListener("click", () => {
-  if (pendingCoin) {
-    if (pendingCoin.type === "passive") {
-      const emptyPassiveIndex = passiveInventory.findIndex((slot) => !slot);
-      if (emptyPassiveIndex === -1) {
-        showToast("Passive Slots voll. Erst verkaufen, um Platz zu schaffen.");
-        pendingCoin = null;
-        confirmOverlay.classList.remove("show");
-        confirmOverlay.setAttribute("aria-hidden", "true");
-        return;
-      }
-    } else if (inventory.every((slot) => slot)) {
-      showToast("Inventar voll. Erst verkaufen oder nutzen.");
-      pendingCoin = null;
-      confirmOverlay.classList.remove("show");
-      confirmOverlay.setAttribute("aria-hidden", "true");
-      return;
-    }
-    addToInventory(pendingCoin);
-    coinPrice *= 2;
-    rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
-    rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
-    coinPurchased = true;
-    rerollCoinsButton.disabled = false;
-  }
+  pendingAction?.();
   pendingCoin = null;
+  pendingAction = null;
   coinResults.innerHTML = "";
   confirmOverlay.classList.remove("show");
   confirmOverlay.setAttribute("aria-hidden", "true");
