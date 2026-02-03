@@ -37,6 +37,12 @@
             </div>
 
             <div class="controls">
+              <div class="controls-left">
+                <button class="btn icon" id="auto" aria-label="Auto-Spin">
+                  <span class="spin-icon" aria-hidden="true">⟳</span>
+                </button>
+                <button class="btn ghost" id="stop">Stop</button>
+              </div>
               <label class="stake">
                 <span>Einsatz</span>
                 <select id="stake">
@@ -48,10 +54,6 @@
                   <option value="50">50 €</option>
                 </select>
               </label>
-              <button class="btn icon" id="auto" aria-label="Auto-Spin">
-                <span class="spin-icon" aria-hidden="true">⟳</span>
-              </button>
-              <button class="btn ghost" id="stop">Stop</button>
             </div>
 
             <button class="lever" id="lever" aria-label="Hebel ziehen">
@@ -82,6 +84,9 @@
             </ul>
             <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
           </div>
+          <button class="btn shop" id="shop" aria-label="Shop öffnen">
+            <span aria-hidden="true">🛒</span>
+          </button>
         </aside>
       </main>
     </div>
