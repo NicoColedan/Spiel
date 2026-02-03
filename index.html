@@ -36,6 +36,17 @@
               <div class="lost" id="lost">YOU LOST</div>
             </div>
 
+            <div class="status">
+              <div class="status-item">
+                <span>Schulden</span>
+                <strong id="debt">50 €</strong>
+              </div>
+              <div class="status-item">
+                <span>Spielzeit</span>
+                <strong id="timer">00:00</strong>
+              </div>
+            </div>
+
             <div class="controls">
               <div class="controls-left">
                 <button class="btn icon" id="auto" aria-label="Auto-Spin">
@@ -65,6 +76,16 @@
               <span id="win-amount">+0</span>
             </div>
           </div>
+
+          <div class="inventory">
+            <h3>Inventar</h3>
+            <div class="inventory-slots" id="inventory">
+              <button class="inventory-slot" data-slot="0" aria-label="Inventar Slot 1"></button>
+              <button class="inventory-slot" data-slot="1" aria-label="Inventar Slot 2"></button>
+              <button class="inventory-slot" data-slot="2" aria-label="Inventar Slot 3"></button>
+              <button class="inventory-slot" data-slot="3" aria-label="Inventar Slot 4"></button>
+            </div>
+          </div>
         </section>
 
         <aside class="panel">
@@ -89,6 +110,32 @@
           </button>
         </aside>
       </main>
+
+      <div class="shop-overlay" id="shop-overlay" aria-hidden="true">
+        <div class="shop-panel" role="dialog" aria-modal="true" aria-label="Shop">
+          <div class="shop-header">
+            <h2>Shop</h2>
+            <button class="btn ghost" id="shop-close">Schließen</button>
+          </div>
+
+          <div class="shop-section">
+            <h3>Credits kaufen</h3>
+            <div class="shop-row">
+              <input type="range" id="credit-range" min="1" max="25" value="1" />
+              <input type="number" id="credit-number" min="1" max="25" value="1" />
+              <button class="btn primary" id="buy-credits">Kaufen</button>
+            </div>
+            <p class="shop-note">Preis: 2 € pro Credit.</p>
+          </div>
+
+          <div class="shop-section">
+            <h3>Coin-Automat</h3>
+            <button class="btn" id="roll-coins">Coin ziehen (50 €)</button>
+            <div class="coin-results" id="coin-results"></div>
+            <button class="btn ghost" id="reroll-coins">Reroll (50 €)</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="script.js"></script>
