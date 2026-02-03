@@ -81,6 +81,7 @@
             <div class="win" id="win">
               <span id="win-amount">+0</span>
             </div>
+            <div class="coin-bonus" id="coin-bonus" aria-live="polite"></div>
           </div>
 
           <div class="inventory">
@@ -140,6 +141,15 @@
               Credits automatisch nachkaufen
             </label>
             <p class="shop-note">Preis: 2 € pro Credit.</p>
+          </div>
+          <div class="shop-section">
+            <h3>Credits verkaufen</h3>
+            <div class="shop-row">
+              <input type="range" id="sell-range" min="1" max="1" value="1" />
+              <input type="number" id="sell-number" min="1" max="1" value="1" />
+              <button class="btn ghost" id="sell-credits">Verkaufen</button>
+            </div>
+            <p class="shop-note">Rückkauf: 2 € pro Credit.</p>
           </div>
 
           <div class="shop-section">
