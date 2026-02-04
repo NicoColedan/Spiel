@@ -35,6 +35,7 @@ const confirmCancel = document.getElementById("confirm-cancel");
 const autoBuyCheckbox = document.getElementById("auto-buy");
 const restartButton = document.getElementById("restart");
 const coinBonus = document.getElementById("coin-bonus");
+const leverHand = document.getElementById("lever-hand");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -66,6 +67,7 @@ let pendingAction = null;
 let coinPrice = 25;
 let currentRollPrice = 25;
 let coinPurchased = false;
+let coinRolled = false;
 let gameOver = false;
 
 const updateCredits = () => {
@@ -137,6 +139,11 @@ const showWin = (amount) => {
 const updateStakeOptions = () => {
   spinCost = Number(stakeSelect.value);
   updatePayoutTable();
+};
+
+const updateCoinControls = () => {
+  rollCoinsButton.disabled = coinRolled && !coinPurchased;
+  rerollCoinsButton.disabled = !coinRolled;
 };
 
 const updateSellControls = () => {
@@ -373,10 +380,12 @@ const renderCoinResults = (coins) => {
         }
         addToInventory(pendingCoin);
         coinPrice *= 2;
+        currentRollPrice = coinPrice;
         rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
         rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
         coinPurchased = true;
-        rerollCoinsButton.disabled = false;
+        coinRolled = false;
+        updateCoinControls();
         coinResults.innerHTML = "";
       });
     });
@@ -401,12 +410,11 @@ const rollCoins = (isReroll = false) => {
     const picks = Array.from({ length: 3 }, () => coinCatalog[Math.floor(Math.random() * coinCatalog.length)]);
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
-    if (!isReroll) {
-      coinPurchased = false;
-      rerollCoinsButton.disabled = true;
-    }
+    coinPurchased = false;
+    coinRolled = true;
     rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
     rollCoinsButton.textContent = `Coin ziehen (${currentRollPrice} Credits)`;
+    updateCoinControls();
   }, 900);
 };
 
@@ -416,7 +424,21 @@ const getRandomSymbol = () => {
 };
 
 const applySymbol = (symbol, index) => {
-  reels[index].innerHTML = `<div class="symbol">${symbol.icon}</div>`;
+  const reel = reels[index];
+  const symbolsInReel = reel.querySelectorAll(".symbol");
+  const randomTop = getRandomSymbol();
+  const randomBottom = getRandomSymbol();
+  if (symbolsInReel.length >= 3) {
+    symbolsInReel[0].textContent = randomTop.icon;
+    symbolsInReel[1].textContent = symbol.icon;
+    symbolsInReel[2].textContent = randomBottom.icon;
+  } else {
+    reel.innerHTML = `
+      <div class="symbol ghost">${randomTop.icon}</div>
+      <div class="symbol main">${symbol.icon}</div>
+      <div class="symbol ghost">${randomBottom.icon}</div>
+    `;
+  }
 };
 
 const startReelSpin = (index) => {
@@ -591,7 +613,7 @@ const spinReels = async () => {
 
   inventory.forEach((coin, index) => {
     if (!coin || !coin.active) return;
-    if (coin.remainingSpins > 0) {
+    if (Number.isFinite(coin.remainingSpins) && coin.remainingSpins > 0) {
       coin.remainingSpins -= 1;
     }
     if (coin.remainingSpins <= 0) {
@@ -617,7 +639,9 @@ leverButton.addEventListener("click", () => {
   autoSpin = false;
   clearTimeout(spinInterval);
   leverButton.classList.add("pulled");
+  leverHand.classList.add("pulling");
   setTimeout(() => leverButton.classList.remove("pulled"), 250);
+  setTimeout(() => leverHand.classList.remove("pulling"), 350);
   spinReels();
 });
 
@@ -679,6 +703,7 @@ restartButton.addEventListener("click", () => {
   coinPrice = 25;
   currentRollPrice = 25;
   coinPurchased = false;
+  coinRolled = false;
   gameOver = false;
   setLostState(false);
   updateBalance();
@@ -686,7 +711,7 @@ restartButton.addEventListener("click", () => {
   renderInventory();
   rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
   rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
-  rerollCoinsButton.disabled = true;
+  updateCoinControls();
   showPayout("Bereit!");
 });
 
@@ -740,8 +765,8 @@ sellNumber.addEventListener("input", () => {
 
 rollCoinsButton.addEventListener("click", rollCoins);
 rerollCoinsButton.addEventListener("click", () => {
-  if (!coinPurchased) {
-    showToast("Reroll erst nach einem Kauf möglich.");
+  if (!coinRolled) {
+    showToast("Reroll erst nach einem Coin-Zug möglich.");
     return;
   }
   rollCoins(true);
@@ -858,4 +883,4 @@ updateCredits();
 renderInventory();
 rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
 rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
-rerollCoinsButton.disabled = true;
+updateCoinControls();
