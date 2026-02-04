@@ -164,16 +164,29 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
   width: min(420px, 90vw);
+  animation: levelPop 0.6s ease-out;
 }
 
 .level-complete-card h2 {
   margin: 0 0 8px;
   color: #ffe7ff;
+  text-shadow: 0 0 20px rgba(255, 77, 148, 0.6);
 }
 
 .level-complete-card p {
   margin: 0 0 18px;
   opacity: 0.8;
+}
+
+@keyframes levelPop {
+  0% {
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .level-complete-actions {
@@ -186,6 +199,22 @@ body {
 header {
   text-align: center;
   margin-bottom: 28px;
+}
+
+.level-indicator {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #ffe7ff;
+  background: rgba(8, 10, 20, 0.7);
+  border: 1px solid rgba(255, 77, 148, 0.4);
+  box-shadow: 0 0 16px rgba(255, 77, 148, 0.35);
 }
 
 header h1 {
@@ -476,28 +505,6 @@ header p {
   transform: translateX(-50%) translateY(28px);
 }
 
-.lever-hand {
-  position: absolute;
-  right: -140px;
-  top: 30px;
-  width: 160px;
-  height: 200px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  pointer-events: none;
-  transition: transform 0.3s ease;
-}
-
-.lever-hand .hand-icon {
-  font-size: 4.2rem;
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.45));
-  transform: rotate(-10deg);
-}
-
-.lever-hand.pulling {
-  transform: translate(-10px, 78px) rotate(10deg);
-}
 
 .btn {
   border: none;
@@ -672,7 +679,7 @@ header p {
   display: grid;
   grid-template-columns: repeat(4, 76px);
   gap: 12px;
-  justify-content: center;
+  justify-content: start;
 }
 
 .inventory-slot {
