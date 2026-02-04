@@ -44,6 +44,8 @@ const levelCompleteOverlay = document.getElementById("level-complete");
 const backToStartButton = document.getElementById("back-to-start");
 const freePlayButton = document.getElementById("free-play");
 const levelIndicator = document.getElementById("level-indicator");
+const lostText = document.getElementById("lost-text");
+const levelCompleteText = document.getElementById("level-complete-text");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -84,6 +86,14 @@ let level2Unlocked = false;
 let freePlayMode = false;
 let currentLevel = 1;
 let audioContext = null;
+let gameOverSoundPlayed = false;
+
+const levelSettings = {
+  1: { minStake: 1, gameOverLimit: -1000, winTarget: 300 },
+  2: { minStake: 25, gameOverLimit: -200, winTarget: 750 },
+};
+
+const getLevelSettings = () => levelSettings[currentLevel] ?? levelSettings[1];
 
 const ensureAudio = () => {
   if (!audioContext) {
@@ -109,24 +119,46 @@ const playTone = (frequency, duration, type = "sine", gainValue = 0.12) => {
 
 const playClickSound = () => {
   ensureAudio();
-  playTone(800, 0.04, "square", 0.08);
+  playTone(320, 0.03, "triangle", 0.08);
 };
 
 const playLeverSound = () => {
   ensureAudio();
-  playTone(420, 0.08, "triangle", 0.12);
-  setTimeout(() => playTone(260, 0.08, "triangle", 0.1), 60);
+  playTone(240, 0.1, "triangle", 0.1);
+  setTimeout(() => playTone(180, 0.12, "triangle", 0.08), 90);
 };
 
 const playSpinSound = () => {
   ensureAudio();
-  playTone(300, 0.25, "sawtooth", 0.06);
+  playTone(260, 0.28, "sine", 0.05);
+};
+
+const playRattleSound = (duration = 900) => {
+  ensureAudio();
+  const ticks = Math.max(4, Math.floor(duration / 120));
+  for (let i = 0; i < ticks; i += 1) {
+    setTimeout(() => playTone(1200, 0.03, "square", 0.03), i * 120);
+  }
 };
 
 const playWinSound = () => {
   ensureAudio();
   playTone(520, 0.12, "sine", 0.14);
-  setTimeout(() => playTone(700, 0.12, "sine", 0.12), 120);
+  setTimeout(() => playTone(720, 0.12, "sine", 0.12), 120);
+};
+
+const playLevelCompleteSound = () => {
+  ensureAudio();
+  playTone(440, 0.14, "sine", 0.12);
+  setTimeout(() => playTone(660, 0.14, "sine", 0.12), 140);
+  setTimeout(() => playTone(880, 0.18, "sine", 0.12), 280);
+};
+
+const playGameOverSound = () => {
+  ensureAudio();
+  playTone(220, 0.2, "sine", 0.12);
+  setTimeout(() => playTone(180, 0.22, "sine", 0.12), 180);
+  setTimeout(() => playTone(140, 0.24, "sine", 0.12), 380);
 };
 
 const updateCredits = () => {
@@ -138,14 +170,19 @@ const updateCredits = () => {
 const updateBalance = () => {
   const formatted = balance > 0 ? `+${balance}` : `${balance}`;
   balanceLabel.textContent = `${formatted} €`;
-  if (balance <= -1000) {
+  const { gameOverLimit, winTarget } = getLevelSettings();
+  if (!gameOver && balance <= gameOverLimit) {
     gameOver = true;
     autoSpin = false;
     clearTimeout(spinInterval);
     autoButton.textContent = "Auto-Spin";
     setLostState(true);
+    if (!gameOverSoundPlayed) {
+      playGameOverSound();
+      gameOverSoundPlayed = true;
+    }
   }
-  if (currentLevel === 1 && balance > 300 && !levelCompleted) {
+  if (!levelCompleted && !freePlayMode && balance > winTarget) {
     showLevelComplete();
   }
 };
@@ -196,7 +233,27 @@ const updateLevelIndicator = () => {
   if (levelIndicator) {
     levelIndicator.textContent = `Level ${currentLevel}`;
   }
+  document.body.classList.toggle("level-2", currentLevel === 2);
 };
+
+function applyLevelSettings() {
+  const { minStake, gameOverLimit, winTarget } = getLevelSettings();
+  Array.from(stakeSelect.options).forEach((option) => {
+    option.disabled = Number(option.value) < minStake;
+  });
+  if (Number(stakeSelect.value) < minStake) {
+    stakeSelect.value = String(minStake);
+  }
+  spinCost = Number(stakeSelect.value);
+  updatePayoutTable();
+  if (lostText) {
+    lostText.textContent = `Dein Guthaben ist unter ${gameOverLimit} €.`;
+  }
+  if (levelCompleteText) {
+    levelCompleteText.textContent = `Du hast mehr als ${winTarget} € Guthaben erreicht.`;
+  }
+  updateLevelIndicator();
+}
 
 const showLevelComplete = () => {
   levelCompleted = true;
@@ -207,6 +264,7 @@ const showLevelComplete = () => {
   levelCompleteOverlay.classList.add("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "false");
   unlockLevel(2);
+  playLevelCompleteSound();
 };
 
 const unlockLevel = (level) => {
@@ -264,12 +322,14 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   coinPurchased = false;
   coinRolled = false;
   gameOver = false;
+  gameOverSoundPlayed = false;
   levelCompleted = false;
   freePlayMode = false;
   setLostState(false);
   updateBalance();
   updateCredits();
   renderInventory();
+  applyLevelSettings();
   rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
   rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
   updateCoinControls();
@@ -672,6 +732,7 @@ const spinReels = async () => {
   updateBalance();
   showPayout("Rattersound läuft...");
   playSpinSound();
+  playRattleSound(900);
 
   const results = reels.map(() => getRandomSymbol());
   const stopDelays = [600, 950, 1300];
@@ -811,7 +872,7 @@ const spinReels = async () => {
     spinInterval = setTimeout(spinReels, 700);
   }
 
-  if (balance <= -1000) {
+  if (balance <= getLevelSettings().gameOverLimit) {
     setLostState(true);
     showPayout("Guthabenlimit erreicht!");
     autoSpin = false;
@@ -1052,6 +1113,7 @@ renderInventory();
 rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
 rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
 updateCoinControls();
+applyLevelSettings();
 gameShell.classList.add("hidden");
 levelButtons.forEach((button) => {
   button.addEventListener("click", () => {
