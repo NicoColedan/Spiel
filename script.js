@@ -41,6 +41,9 @@ const gameLayout = document.getElementById("game");
 const gameShell = document.getElementById("game-shell");
 const levelButtons = Array.from(document.querySelectorAll(".level-card"));
 const centerMessage = document.getElementById("center-message");
+const levelCompleteOverlay = document.getElementById("level-complete");
+const backToStartButton = document.getElementById("back-to-start");
+const freePlayButton = document.getElementById("free-play");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -69,11 +72,16 @@ let hourglassCounter = 0;
 let startTime = Date.now();
 let pendingCoin = null;
 let pendingAction = null;
+let currentCoinResults = [];
 let coinPrice = 25;
 let currentRollPrice = 25;
 let coinPurchased = false;
 let coinRolled = false;
 let gameOver = false;
+let levelCompleted = false;
+let level2Unlocked = false;
+let freePlayMode = false;
+let currentLevel = 1;
 
 const updateCredits = () => {
   creditsLabel.textContent = credits;
@@ -90,6 +98,9 @@ const updateBalance = () => {
     clearTimeout(spinInterval);
     autoButton.textContent = "Auto-Spin";
     setLostState(true);
+  }
+  if (currentLevel === 1 && balance > 300 && !levelCompleted) {
+    showLevelComplete();
   }
 };
 
@@ -135,6 +146,74 @@ const showCenterMessage = (message) => {
   setTimeout(() => centerMessage.classList.remove("show"), 1600);
 };
 
+const showLevelComplete = () => {
+  levelCompleted = true;
+  freePlayMode = false;
+  stopSpinLoops();
+  levelCompleteOverlay.classList.add("show");
+  levelCompleteOverlay.setAttribute("aria-hidden", "false");
+  unlockLevel(2);
+};
+
+const unlockLevel = (level) => {
+  if (level !== 2) return;
+  level2Unlocked = true;
+  const button = levelButtons.find((entry) => entry.dataset.level === "2");
+  if (!button) return;
+  button.classList.remove("locked");
+  button.classList.add("unlocked");
+  const lockIcon = button.querySelector(".lock-icon");
+  if (lockIcon) {
+    lockIcon.classList.add("unlock-drop");
+  }
+};
+
+const stopSpinLoops = () => {
+  autoSpin = false;
+  clearTimeout(spinInterval);
+  autoButton.textContent = "Auto-Spin";
+  reelIntervals.forEach((intervalId) => clearInterval(intervalId));
+  reelIntervals.clear();
+  reels.forEach((reel, index) => {
+    reel.classList.remove("spinning");
+    applySymbol(getRandomSymbol(), index);
+  });
+  isSpinning = false;
+};
+
+const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
+  stopSpinLoops();
+  credits = 25;
+  balance = -50;
+  freeSpins = 0;
+  winBonusMultiplier = 0;
+  winBonusTurns = 0;
+  doubleWinNext = false;
+  luckyPunchArmed = false;
+  lastSpinWin = false;
+  hourglassCounter = 0;
+  startTime = Date.now();
+  inventory.fill(null);
+  if (!keepPassives) {
+    passiveInventory.fill(null);
+    passives.clear();
+  }
+  coinPrice = 25;
+  currentRollPrice = 25;
+  coinPurchased = false;
+  coinRolled = false;
+  gameOver = false;
+  levelCompleted = false;
+  freePlayMode = false;
+  setLostState(false);
+  updateBalance();
+  updateCredits();
+  renderInventory();
+  rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
+  rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+  updateCoinControls();
+  showPayout("Bereit!");
+};
 const setLostState = (show) => {
   lostOverlay.classList.toggle("show", show);
 };
@@ -361,6 +440,7 @@ const addToInventory = (coin) => {
 };
 
 const renderCoinResults = (coins) => {
+  currentCoinResults = coins;
   coinResults.innerHTML = "";
   coins.forEach((coin) => {
     const card = document.createElement("div");
@@ -403,6 +483,7 @@ const renderCoinResults = (coins) => {
         coinPurchased = true;
         coinRolled = false;
         updateCoinControls();
+        currentCoinResults = [];
         coinResults.innerHTML = "";
       });
     });
@@ -691,16 +772,7 @@ stakeSelect.addEventListener("change", () => {
 });
 
 stopButton.addEventListener("click", () => {
-  autoSpin = false;
-  autoButton.textContent = "Auto-Spin";
-  clearTimeout(spinInterval);
-  reelIntervals.forEach((intervalId) => clearInterval(intervalId));
-  reelIntervals.clear();
-  reels.forEach((reel, index) => {
-    reel.classList.remove("spinning");
-    applySymbol(getRandomSymbol(), index);
-  });
-  isSpinning = false;
+  stopSpinLoops();
 });
 
 shopButton.addEventListener("click", () => {
@@ -714,35 +786,7 @@ shopClose.addEventListener("click", () => {
 });
 
 restartButton.addEventListener("click", () => {
-  autoSpin = false;
-  clearTimeout(spinInterval);
-  autoButton.textContent = "Auto-Spin";
-  credits = 25;
-  balance = -50;
-  freeSpins = 0;
-  winBonusMultiplier = 0;
-  winBonusTurns = 0;
-  doubleWinNext = false;
-  luckyPunchArmed = false;
-  lastSpinWin = false;
-  hourglassCounter = 0;
-  startTime = Date.now();
-  inventory.fill(null);
-  passiveInventory.fill(null);
-  passives.clear();
-  coinPrice = 25;
-  currentRollPrice = 25;
-  coinPurchased = false;
-  coinRolled = false;
-  gameOver = false;
-  setLostState(false);
-  updateBalance();
-  updateCredits();
-  renderInventory();
-  rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
-  rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
-  updateCoinControls();
-  showPayout("Bereit!");
+  resetGameState({ keepPassives: false });
 });
 
 creditRange.addEventListener("input", () => {
@@ -765,6 +809,12 @@ buyCreditsButton.addEventListener("click", () => {
     updateCredits();
     showToast(`+${amount} Credits gekauft`);
   });
+});
+
+autoBuyCheckbox.addEventListener("change", () => {
+  if (currentCoinResults.length) {
+    renderCoinResults(currentCoinResults);
+  }
 });
 
 sellCreditsButton.addEventListener("click", () => {
@@ -918,11 +968,36 @@ gameShell.classList.add("hidden");
 levelButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const level = button.dataset.level;
+    if (level === "1") {
+      currentLevel = 1;
+      resetGameState({ keepPassives: false });
+      startScreen.classList.add("hidden");
+      gameShell.classList.remove("hidden");
+      return;
+    }
+    if (level === "2" && level2Unlocked) {
+      currentLevel = 2;
+      resetGameState({ keepPassives: true });
+      startScreen.classList.add("hidden");
+      gameShell.classList.remove("hidden");
+      return;
+    }
     if (level !== "1") {
       showCenterMessage("Bitte zuerst Level 1 abschließen.");
       return;
     }
-    startScreen.classList.add("hidden");
-    gameShell.classList.remove("hidden");
   });
+});
+
+backToStartButton.addEventListener("click", () => {
+  levelCompleteOverlay.classList.remove("show");
+  levelCompleteOverlay.setAttribute("aria-hidden", "true");
+  startScreen.classList.remove("hidden");
+  gameShell.classList.add("hidden");
+});
+
+freePlayButton.addEventListener("click", () => {
+  freePlayMode = true;
+  levelCompleteOverlay.classList.remove("show");
+  levelCompleteOverlay.setAttribute("aria-hidden", "true");
 });
