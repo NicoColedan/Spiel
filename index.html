@@ -23,13 +23,19 @@
             <div class="screen" id="screen">
               <div class="reels" aria-live="polite">
                 <div class="reel" data-reel="0">
-                  <div class="symbol">🍒</div>
+                  <div class="symbol ghost">⭐</div>
+                  <div class="symbol main">🍒</div>
+                  <div class="symbol ghost">💎</div>
                 </div>
                 <div class="reel" data-reel="1">
-                  <div class="symbol">⭐</div>
+                  <div class="symbol ghost">🍒</div>
+                  <div class="symbol main">⭐</div>
+                  <div class="symbol ghost">7️⃣</div>
                 </div>
                 <div class="reel" data-reel="2">
-                  <div class="symbol">💎</div>
+                  <div class="symbol ghost">🔔</div>
+                  <div class="symbol main">💎</div>
+                  <div class="symbol ghost">🍒</div>
                 </div>
               </div>
               <div class="payout" id="payout">Bereit!</div>
@@ -77,6 +83,9 @@
               <div class="lever-stick"></div>
               <div class="lever-ball"></div>
             </button>
+            <div class="lever-hand" id="lever-hand" aria-hidden="true">
+              <span class="hand-icon">🖐️</span>
+            </div>
 
             <div class="win" id="win">
               <span id="win-amount">+0</span>
