@@ -125,10 +125,6 @@
         </section>
 
         <aside class="panel">
-          <div class="credits">
-            <span>Credits</span>
-            <strong id="credits">50</strong>
-          </div>
           <div class="rules">
             <h2>Auszahlung</h2>
             <ul>
@@ -168,38 +164,15 @@
           </div>
 
           <div class="shop-section">
-            <h3>Credits kaufen</h3>
-            <div class="shop-row">
-              <input type="range" id="credit-range" min="1" max="500" value="1" />
-              <input type="number" id="credit-number" min="1" max="500" value="1" />
-              <button class="btn primary" id="buy-credits">Kaufen</button>
-            </div>
-            <label class="shop-auto">
-              <input type="checkbox" id="auto-buy" />
-              Credits automatisch nachkaufen
-            </label>
-            <p class="shop-note">Preis: 2 € pro Credit.</p>
-          </div>
-          <div class="shop-section">
-            <h3>Credits verkaufen</h3>
-            <div class="shop-row">
-              <input type="range" id="sell-range" min="1" max="1" value="1" />
-              <input type="number" id="sell-number" min="1" max="1" value="1" />
-              <button class="btn ghost" id="sell-credits">Verkaufen</button>
-            </div>
-            <p class="shop-note">Rückkauf: 2 € pro Credit.</p>
-          </div>
-
-          <div class="shop-section">
             <h3>Coin-Automat</h3>
-            <button class="btn" id="roll-coins">Coin ziehen (25 Credits)</button>
+            <button class="btn" id="roll-coins">Coin ziehen (25 €)</button>
             <div class="coin-spinner" id="coin-spinner" aria-hidden="true">
               <span class="spinner-coin">🪙</span>
               <span class="spinner-coin">🪙</span>
               <span class="spinner-coin">🪙</span>
             </div>
             <div class="coin-results" id="coin-results"></div>
-            <button class="btn ghost" id="reroll-coins" disabled>Reroll (25 Credits)</button>
+            <button class="btn ghost" id="reroll-coins" disabled>Reroll (25 €)</button>
           </div>
         </div>
       </div>
