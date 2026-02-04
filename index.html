@@ -18,12 +18,13 @@
         </div>
       </div>
 
-      <header>
-        <h1>Nicos Abzockgerät</h1>
-        <p>Betätige den Hebel und teste dein Glück.</p>
-      </header>
+      <div id="game-shell">
+        <header>
+          <h1>Nicos Abzockgerät</h1>
+          <p>Betätige den Hebel und teste dein Glück.</p>
+        </header>
 
-      <main class="layout" id="game">
+        <main class="layout" id="game">
         <section class="slot-machine">
           <div class="cabinet">
             <div class="marquee">
@@ -94,7 +95,8 @@
               <div class="lever-ball"></div>
             </button>
             <div class="lever-hand" id="lever-hand" aria-hidden="true">
-              <span class="hand-icon">🖐️</span>
+              <div class="arm"></div>
+              <div class="hand"></div>
             </div>
 
             <div class="win" id="win">
@@ -139,7 +141,10 @@
             <span aria-hidden="true">🛒</span>
           </button>
         </aside>
-      </main>
+        </main>
+      </div>
+
+      <div class="center-message" id="center-message" aria-live="polite"></div>
 
       <div class="shop-overlay" id="shop-overlay" aria-hidden="true">
         <div class="shop-panel" role="dialog" aria-modal="true" aria-label="Shop">
