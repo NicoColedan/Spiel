@@ -36,6 +36,9 @@ const autoBuyCheckbox = document.getElementById("auto-buy");
 const restartButton = document.getElementById("restart");
 const coinBonus = document.getElementById("coin-bonus");
 const leverHand = document.getElementById("lever-hand");
+const startScreen = document.getElementById("start-screen");
+const gameLayout = document.getElementById("game");
+const levelButtons = Array.from(document.querySelectorAll(".level-card"));
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -378,6 +381,9 @@ const renderCoinResults = (coins) => {
           showToast("Inventar voll. Erst verkaufen oder nutzen.");
           return;
         }
+        if (!ensureCredits(currentRollPrice, "Coin-Kauf")) return;
+        credits -= currentRollPrice;
+        updateCredits();
         addToInventory(pendingCoin);
         coinPrice *= 2;
         currentRollPrice = coinPrice;
@@ -393,15 +399,28 @@ const renderCoinResults = (coins) => {
   });
 };
 
+const ensureCredits = (cost, label = "Kauf") => {
+  if (credits >= cost) return true;
+  if (!autoBuyCheckbox.checked) {
+    showToast("Nicht genug Credits.");
+    return false;
+  }
+  const needed = cost - credits;
+  const autoCost = needed * 2;
+  balance -= autoCost;
+  credits += needed;
+  updateBalance();
+  updateCredits();
+  showToast(`${label}: Auto-Buy +${needed} Credits`);
+  return credits >= cost;
+};
+
 const rollCoins = (isReroll = false) => {
   if (gameOver) return;
   if (!isReroll) {
     currentRollPrice = coinPrice;
   }
-  if (credits < currentRollPrice) {
-    showToast("Nicht genug Credits für Coin ziehen.");
-    return;
-  }
+  if (!ensureCredits(currentRollPrice, "Coin ziehen")) return;
   credits -= currentRollPrice;
   updateCredits();
   coinResults.innerHTML = "";
@@ -884,3 +903,15 @@ renderInventory();
 rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
 rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
 updateCoinControls();
+gameLayout.classList.add("hidden");
+levelButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const level = button.dataset.level;
+    if (level !== "1") {
+      showToast("Bitte zuerst Level 1 abschließen.");
+      return;
+    }
+    startScreen.classList.add("hidden");
+    gameLayout.classList.remove("hidden");
+  });
+});
