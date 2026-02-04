@@ -1,6 +1,5 @@
 const reels = Array.from(document.querySelectorAll(".reel"));
 const payout = document.getElementById("payout");
-const creditsLabel = document.getElementById("credits");
 const autoButton = document.getElementById("auto");
 const stopButton = document.getElementById("stop");
 const lostOverlay = document.getElementById("lost");
@@ -13,16 +12,10 @@ const payoutRefund = document.querySelector("[data-refund]");
 const shopButton = document.getElementById("shop");
 const shopOverlay = document.getElementById("shop-overlay");
 const shopClose = document.getElementById("shop-close");
-const creditRange = document.getElementById("credit-range");
-const creditNumber = document.getElementById("credit-number");
-const buyCreditsButton = document.getElementById("buy-credits");
-const sellCreditsButton = document.getElementById("sell-credits");
 const rollCoinsButton = document.getElementById("roll-coins");
 const rerollCoinsButton = document.getElementById("reroll-coins");
 const coinResults = document.getElementById("coin-results");
 const coinSpinner = document.getElementById("coin-spinner");
-const sellRange = document.getElementById("sell-range");
-const sellNumber = document.getElementById("sell-number");
 const inventorySlots = Array.from(document.querySelectorAll(".inventory-slot[data-slot]"));
 const passiveSlots = Array.from(document.querySelectorAll(".inventory-slot[data-passive-slot]"));
 const passiveCoins = document.getElementById("passive-coins");
@@ -32,7 +25,6 @@ const confirmOverlay = document.getElementById("confirm-overlay");
 const confirmText = document.getElementById("confirm-text");
 const confirmBuy = document.getElementById("confirm-buy");
 const confirmCancel = document.getElementById("confirm-cancel");
-const autoBuyCheckbox = document.getElementById("auto-buy");
 const restartButton = document.getElementById("restart");
 const coinBonus = document.getElementById("coin-bonus");
 const startScreen = document.getElementById("start-screen");
@@ -57,7 +49,6 @@ const symbols = [
 ];
 
 let spinCost = 5;
-let credits = 25;
 let balance = -50;
 let isSpinning = false;
 let autoSpin = false;
@@ -67,8 +58,10 @@ let freeSpins = 0;
 let winBonusMultiplier = 0;
 let winBonusTurns = 0;
 let doubleWinNext = false;
+let doubleWinQueue = 0;
 let luckyPunchArmed = false;
 let luckyPunchReward = 25;
+let luckyPunchQueue = 0;
 let lastSpinWin = false;
 let freeSpinQueued = false;
 let hourglassCounter = 0;
@@ -133,6 +126,24 @@ const playSpinSound = () => {
   playTone(260, 0.28, "sine", 0.05);
 };
 
+const playCoinActivateSound = () => {
+  ensureAudio();
+  playTone(640, 0.07, "triangle", 0.1);
+  setTimeout(() => playTone(880, 0.06, "triangle", 0.08), 80);
+};
+
+const playShopOpenSound = () => {
+  ensureAudio();
+  playTone(420, 0.08, "sine", 0.09);
+  setTimeout(() => playTone(520, 0.08, "sine", 0.08), 100);
+};
+
+const playShopCloseSound = () => {
+  ensureAudio();
+  playTone(360, 0.08, "sine", 0.09);
+  setTimeout(() => playTone(280, 0.1, "sine", 0.08), 100);
+};
+
 const playRattleSound = (duration = 900) => {
   ensureAudio();
   const ticks = Math.max(4, Math.floor(duration / 120));
@@ -159,12 +170,6 @@ const playGameOverSound = () => {
   playTone(220, 0.2, "sine", 0.12);
   setTimeout(() => playTone(180, 0.22, "sine", 0.12), 180);
   setTimeout(() => playTone(140, 0.24, "sine", 0.12), 380);
-};
-
-const updateCredits = () => {
-  creditsLabel.textContent = credits;
-  updateStakeOptions();
-  updateSellControls();
 };
 
 const updateBalance = () => {
@@ -221,6 +226,13 @@ const openConfirm = (text, action) => {
 const showPayout = (message, highlight = false) => {
   payout.textContent = message;
   payout.style.color = highlight ? "#ffe680" : "#4dd7ff";
+};
+
+const consumeActiveCoin = (coinId) => {
+  const coinIndex = inventory.findIndex((coin) => coin?.id === coinId && coin.active);
+  if (coinIndex !== -1) {
+    inventory[coinIndex].remainingSpins = 0;
+  }
 };
 
 const showCenterMessage = (message) => {
@@ -301,14 +313,15 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   confirmOverlay.setAttribute("aria-hidden", "true");
   currentCoinResults = [];
   coinResults.innerHTML = "";
-  credits = 25;
   balance = -50;
   freeSpins = 0;
   freeSpinQueued = false;
   winBonusMultiplier = 0;
   winBonusTurns = 0;
   doubleWinNext = false;
+  doubleWinQueue = 0;
   luckyPunchArmed = false;
+  luckyPunchQueue = 0;
   lastSpinWin = false;
   hourglassCounter = 0;
   startTime = Date.now();
@@ -327,11 +340,10 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   freePlayMode = false;
   setLostState(false);
   updateBalance();
-  updateCredits();
   renderInventory();
   applyLevelSettings();
-  rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
-  rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+  rollCoinsButton.textContent = `Coin ziehen (${coinPrice} €)`;
+  rerollCoinsButton.textContent = `Reroll (${coinPrice} €)`;
   updateCoinControls();
   showPayout("Bereit!");
   updateLevelIndicator();
@@ -361,23 +373,6 @@ const updateCoinControls = () => {
   rerollCoinsButton.disabled = !coinRolled;
 };
 
-const updateSellControls = () => {
-  const maxSell = Math.max(1, credits);
-  sellRange.max = maxSell;
-  sellNumber.max = maxSell;
-  if (credits <= 0) {
-    sellRange.value = 1;
-    sellNumber.value = 1;
-    sellCreditsButton.disabled = true;
-  } else {
-    if (Number(sellNumber.value) > maxSell) {
-      sellNumber.value = maxSell;
-      sellRange.value = maxSell;
-    }
-    sellCreditsButton.disabled = false;
-  }
-};
-
 const updatePayoutTable = () => {
   payoutMultipliers.forEach((entry) => {
     const multiplier = Number(entry.dataset.multiplier);
@@ -400,10 +395,10 @@ const updateTimer = () => {
     const hourglassTicks = Math.floor(elapsed / 600);
     if (hourglassTicks > hourglassCounter) {
       const gained = (hourglassTicks - hourglassCounter) * 10;
-      credits += gained;
+      balance += gained;
       hourglassCounter = hourglassTicks;
-      updateCredits();
-      showToast(`Hourglass +${gained} Credits`);
+      updateBalance();
+      showToast(`Hourglass +${gained} €`);
     }
   }
 };
@@ -442,7 +437,7 @@ const coinCatalog = [
     name: "Hourglass",
     type: "passive",
     icon: "⏳",
-    description: "Alle 10 Minuten +10 Credits.",
+    description: "Alle 10 Minuten +10 €.",
   },
   {
     id: "fake-coin",
@@ -473,6 +468,7 @@ const coinCatalog = [
     icon: "🥕",
     description: "Nächster Gewinn wird verdoppelt.",
     onUse: () => {
+      doubleWinQueue += 1;
       doubleWinNext = true;
       showToast("Golden Carrot aktiviert!");
     },
@@ -482,8 +478,9 @@ const coinCatalog = [
     name: "Lucky Punch",
     type: "active",
     icon: "🥊",
-    description: "Kein Gewinn? +25 Credits. Gewinn? Kein Bonus.",
+    description: "Kein Gewinn? +25 €. Gewinn? Kein Bonus.",
     onUse: () => {
+      luckyPunchQueue += 1;
       luckyPunchArmed = true;
       showToast("Lucky Punch bereit.");
     },
@@ -597,14 +594,14 @@ const renderCoinResults = (coins) => {
           showToast("Inventar voll. Erst verkaufen oder nutzen.");
           return;
         }
-        if (!ensureCredits(currentRollPrice, "Coin-Kauf")) return;
-        credits -= currentRollPrice;
-        updateCredits();
+        if (!ensureBalance()) return;
+        balance -= currentRollPrice;
+        updateBalance();
         addToInventory(pendingCoin);
         coinPrice *= 2;
         currentRollPrice = coinPrice;
-        rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
-        rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
+        rollCoinsButton.textContent = `Coin ziehen (${coinPrice} €)`;
+        rerollCoinsButton.textContent = `Reroll (${currentRollPrice} €)`;
         coinPurchased = true;
         coinRolled = false;
         updateCoinControls();
@@ -616,20 +613,12 @@ const renderCoinResults = (coins) => {
   });
 };
 
-const ensureCredits = (cost, label = "Kauf") => {
-  if (credits >= cost) return true;
-  if (!autoBuyCheckbox.checked) {
-    showToast("Nicht genug Credits.");
+const ensureBalance = () => {
+  if (gameOver) {
+    showToast("Spiel ist vorbei.");
     return false;
   }
-  const needed = cost - credits;
-  const autoCost = needed * 2;
-  balance -= autoCost;
-  credits += needed;
-  updateBalance();
-  updateCredits();
-  showToast(`${label}: Auto-Buy +${needed} Credits`);
-  return credits >= cost;
+  return true;
 };
 
 const rollCoins = (isReroll = false) => {
@@ -637,9 +626,9 @@ const rollCoins = (isReroll = false) => {
   if (!isReroll) {
     currentRollPrice = coinPrice;
   }
-  if (!ensureCredits(currentRollPrice, "Coin ziehen")) return;
-  credits -= currentRollPrice;
-  updateCredits();
+  if (!ensureBalance()) return;
+  balance -= currentRollPrice;
+  updateBalance();
   coinResults.innerHTML = "";
   coinSpinner.classList.add("show");
   setTimeout(() => {
@@ -648,8 +637,8 @@ const rollCoins = (isReroll = false) => {
     coinSpinner.classList.remove("show");
     coinPurchased = false;
     coinRolled = true;
-    rerollCoinsButton.textContent = `Reroll (${currentRollPrice} Credits)`;
-    rollCoinsButton.textContent = `Coin ziehen (${currentRollPrice} Credits)`;
+    rerollCoinsButton.textContent = `Reroll (${currentRollPrice} €)`;
+    rollCoinsButton.textContent = `Coin ziehen (${currentRollPrice} €)`;
     updateCoinControls();
   }, 900);
 };
@@ -702,21 +691,6 @@ const stopReelSpin = (index, finalSymbol) => {
 const spinReels = async () => {
   if (isSpinning) return;
   if (gameOver) return;
-  if (autoBuyCheckbox.checked && credits < spinCost) {
-    const needed = spinCost - credits;
-    const cost = needed * 2;
-    balance -= cost;
-    credits += needed;
-    updateBalance();
-    updateCredits();
-    showToast(`Auto-Buy: +${needed} Credits`);
-  }
-  if (credits < spinCost) {
-    showToast("Um weiter zu spielen, besorge dir Credits.");
-    autoSpin = false;
-    autoButton.textContent = "Auto-Spin";
-    return;
-  }
 
   setLostState(false);
   isSpinning = true;
@@ -726,16 +700,15 @@ const spinReels = async () => {
     }
     freeSpins = Math.max(0, freeSpins - 1);
   } else {
-    credits -= spinCost;
+    balance -= spinCost;
   }
-  updateCredits();
   updateBalance();
   showPayout("Rattersound läuft...");
   playSpinSound();
-  playRattleSound(900);
 
   const results = reels.map(() => getRandomSymbol());
   const stopDelays = [600, 950, 1300];
+  playRattleSound(stopDelays[stopDelays.length - 1]);
 
   reels.forEach((_, index) => startReelSpin(index));
 
@@ -771,13 +744,13 @@ const spinReels = async () => {
     if (symbolInfo) {
       if (count === 3 && symbolInfo.threeMult === "refund") {
         payoutValue = spinCost;
-        credits += payoutValue;
+        balance += payoutValue;
         message = `❌❌❌ +${payoutValue}`;
       } else {
         const multiplier = count === 3 ? symbolInfo.threeMult : symbolInfo.twoMult;
         payoutValue = Math.round(multiplier * spinCost);
         if (payoutValue > 0) {
-          credits += payoutValue;
+          balance += payoutValue;
         }
         message =
           payoutValue > 0
@@ -792,38 +765,32 @@ const spinReels = async () => {
   if (matchCount === 3 && passives.has("lucky-dog")) {
     const bonus = Math.round(payoutValue * 0.1);
     payoutValue += bonus;
-    credits += bonus;
+    balance += bonus;
     bonusTriggered = true;
     bonusEvents.push({ amount: bonus, label: "Lucky Dog", icon: "🐶" });
   }
 
   if (matchCount === 3 && symbolsOnly.every((icon) => icon === "7️⃣") && passives.has("lucky-cat")) {
-    credits += payoutValue;
+    balance += payoutValue;
     payoutValue *= 2;
     bonusTriggered = true;
     bonusEvents.push({ amount: payoutValue / 2, label: "Lucky Cat", icon: "🐱" });
   }
 
-  if (doubleWinNext) {
-    if (payoutValue > 0) {
-      credits += payoutValue;
-      payoutValue *= 2;
-      bonusTriggered = true;
-      bonusEvents.push({ amount: payoutValue / 2, label: "Golden Carrot", icon: "🥕" });
-    }
-    if (payoutValue > 0) {
-      doubleWinNext = false;
-      const carrotIndex = inventory.findIndex((coin) => coin?.id === "golden-carrot");
-      if (carrotIndex !== -1) {
-        inventory[carrotIndex].remainingSpins = 0;
-      }
-    }
+  if (doubleWinQueue > 0 && payoutValue > 0) {
+    balance += payoutValue;
+    payoutValue *= 2;
+    bonusTriggered = true;
+    bonusEvents.push({ amount: payoutValue / 2, label: "Golden Carrot", icon: "🥕" });
+    doubleWinQueue -= 1;
+    consumeActiveCoin("golden-carrot");
   }
+  doubleWinNext = doubleWinQueue > 0;
 
   if (winBonusTurns > 0) {
     if (payoutValue > 0) {
       const bonus = Math.round(payoutValue * winBonusMultiplier);
-      credits += bonus;
+      balance += bonus;
       payoutValue += bonus;
       bonusTriggered = true;
       bonusEvents.push({ amount: bonus, label: "Bonus", icon: "✨" });
@@ -835,16 +802,19 @@ const spinReels = async () => {
   }
 
   lastSpinWin = payoutValue > 0;
-  if (!lastSpinWin && luckyPunchArmed) {
-    credits += luckyPunchReward;
+  if (!lastSpinWin && luckyPunchQueue > 0) {
+    balance += luckyPunchReward;
     bonusTriggered = true;
     bonusEvents.push({ amount: luckyPunchReward, label: "Lucky Punch", icon: "🥊" });
-    luckyPunchArmed = false;
-  } else if (lastSpinWin && luckyPunchArmed) {
-    luckyPunchArmed = false;
+    luckyPunchQueue -= 1;
+    consumeActiveCoin("lucky-punch");
+  } else if (lastSpinWin && luckyPunchQueue > 0) {
+    luckyPunchQueue -= 1;
+    consumeActiveCoin("lucky-punch");
   }
+  luckyPunchArmed = luckyPunchQueue > 0;
 
-  updateCredits();
+  updateBalance();
   showPayout(message, payoutValue > 0);
   winOverlay.classList.toggle("boost", bonusTriggered);
   showWin(payoutValue);
@@ -911,13 +881,13 @@ stopButton.addEventListener("click", () => {
 });
 
 shopButton.addEventListener("click", () => {
-  playClickSound();
+  playShopOpenSound();
   shopOverlay.classList.add("show");
   shopOverlay.setAttribute("aria-hidden", "false");
 });
 
 shopClose.addEventListener("click", () => {
-  playClickSound();
+  playShopCloseSound();
   shopOverlay.classList.remove("show");
   shopOverlay.setAttribute("aria-hidden", "true");
 });
@@ -925,63 +895,6 @@ shopClose.addEventListener("click", () => {
 restartButton.addEventListener("click", () => {
   playClickSound();
   resetGameState({ keepPassives: false });
-});
-
-creditRange.addEventListener("input", () => {
-  creditNumber.value = creditRange.value;
-});
-
-creditNumber.addEventListener("input", () => {
-  const value = Math.max(1, Math.min(500, Number(creditNumber.value || 1)));
-  creditNumber.value = value;
-  creditRange.value = value;
-});
-
-buyCreditsButton.addEventListener("click", () => {
-  playClickSound();
-  const amount = Number(creditNumber.value);
-  const cost = amount * 2;
-  openConfirm(`Credits kaufen? (${amount} Credits für ${cost} €)`, () => {
-    balance -= cost;
-    credits += amount;
-    updateBalance();
-    updateCredits();
-    showToast(`+${amount} Credits gekauft`);
-  });
-});
-
-autoBuyCheckbox.addEventListener("change", () => {
-  playClickSound();
-  if (currentCoinResults.length) {
-    renderCoinResults(currentCoinResults);
-  }
-});
-
-sellCreditsButton.addEventListener("click", () => {
-  playClickSound();
-  const amount = Number(sellNumber.value);
-  if (amount > credits) {
-    showToast("Nicht genug Credits zum Verkaufen.");
-    return;
-  }
-  const gain = amount * 2;
-  openConfirm(`Credits verkaufen? (${amount} Credits für ${gain} €)`, () => {
-    credits -= amount;
-    balance += gain;
-    updateBalance();
-    updateCredits();
-    showToast(`-${amount} Credits verkauft`);
-  });
-});
-
-sellRange.addEventListener("input", () => {
-  sellNumber.value = sellRange.value;
-});
-
-sellNumber.addEventListener("input", () => {
-  const value = Math.max(1, Math.min(Number(sellNumber.max), Number(sellNumber.value || 1)));
-  sellNumber.value = value;
-  sellRange.value = value;
 });
 
 rollCoinsButton.addEventListener("click", () => {
@@ -1015,7 +928,7 @@ inventorySlots.forEach((slot, index) => {
     activate.textContent = "Aktivieren";
     const sell = document.createElement("button");
     sell.className = "btn ghost";
-    sell.textContent = "Verkaufen (10 Credits)";
+    sell.textContent = "Verkaufen (10 €)";
 
     if (coin.active) {
       sell.disabled = true;
@@ -1030,10 +943,11 @@ inventorySlots.forEach((slot, index) => {
         if (coin.id === "red-pepper") coin.remainingSpins = 3;
         if (coin.id === "green-pepper") coin.remainingSpins = 5;
         if (coin.id === "golden-carrot") coin.remainingSpins = Number.POSITIVE_INFINITY;
-        if (coin.id === "lucky-punch") coin.remainingSpins = 1;
+        if (coin.id === "lucky-punch") coin.remainingSpins = Number.POSITIVE_INFINITY;
         if (coin.id === "fake-coin") {
           coin.remainingSpins = 1;
         }
+        playCoinActivateSound();
         renderInventory();
       }
       actions.remove();
@@ -1042,10 +956,10 @@ inventorySlots.forEach((slot, index) => {
     sell.addEventListener("click", (event) => {
       event.stopPropagation();
       if (coin.active) return;
-      openConfirm("Coin für 10 Credits verkaufen?", () => {
-        credits += 10;
+      openConfirm("Coin für 10 € verkaufen?", () => {
+        balance += 10;
         inventory[index] = null;
-        updateCredits();
+        updateBalance();
         renderInventory();
       });
       actions.remove();
@@ -1071,14 +985,14 @@ passiveSlots.forEach((slot, index) => {
     actions.className = "coin-actions show";
     const sell = document.createElement("button");
     sell.className = "btn ghost";
-    sell.textContent = "Verkaufen (10 Credits)";
+    sell.textContent = "Verkaufen (10 €)";
     sell.addEventListener("click", (event) => {
       event.stopPropagation();
-      openConfirm("Passiven Coin für 10 Credits verkaufen?", () => {
-        credits += 10;
+      openConfirm("Passiven Coin für 10 € verkaufen?", () => {
+        balance += 10;
         passives.delete(coin.id);
         passiveInventory[index] = null;
-        updateCredits();
+        updateBalance();
         renderInventory();
       });
       actions.remove();
@@ -1108,10 +1022,9 @@ confirmBuy.addEventListener("click", () => {
 
 setInterval(updateTimer, 1000);
 updateBalance();
-updateCredits();
 renderInventory();
-rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
-rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
+rollCoinsButton.textContent = `Coin ziehen (${coinPrice} €)`;
+rerollCoinsButton.textContent = `Reroll (${coinPrice} €)`;
 updateCoinControls();
 applyLevelSettings();
 gameShell.classList.add("hidden");
