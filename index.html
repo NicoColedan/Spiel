@@ -8,12 +8,22 @@
   </head>
   <body>
     <div class="page">
+      <div class="start-screen" id="start-screen">
+        <h1>Nicos Abzockgerät</h1>
+        <p>Wähle ein Level.</p>
+        <div class="level-list">
+          <button class="level-card level-one" data-level="1">Level 1</button>
+          <button class="level-card locked" data-level="2">Level 2 🔒</button>
+          <button class="level-card locked" data-level="3">Level 3 🔒</button>
+        </div>
+      </div>
+
       <header>
         <h1>Nicos Abzockgerät</h1>
         <p>Betätige den Hebel und teste dein Glück.</p>
       </header>
 
-      <main class="layout">
+      <main class="layout" id="game">
         <section class="slot-machine">
           <div class="cabinet">
             <div class="marquee">
