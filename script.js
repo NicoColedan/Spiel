@@ -35,7 +35,6 @@ const confirmCancel = document.getElementById("confirm-cancel");
 const autoBuyCheckbox = document.getElementById("auto-buy");
 const restartButton = document.getElementById("restart");
 const coinBonus = document.getElementById("coin-bonus");
-const leverHand = document.getElementById("lever-hand");
 const startScreen = document.getElementById("start-screen");
 const gameLayout = document.getElementById("game");
 const gameShell = document.getElementById("game-shell");
@@ -44,6 +43,7 @@ const centerMessage = document.getElementById("center-message");
 const levelCompleteOverlay = document.getElementById("level-complete");
 const backToStartButton = document.getElementById("back-to-start");
 const freePlayButton = document.getElementById("free-play");
+const levelIndicator = document.getElementById("level-indicator");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -68,6 +68,7 @@ let doubleWinNext = false;
 let luckyPunchArmed = false;
 let luckyPunchReward = 25;
 let lastSpinWin = false;
+let freeSpinQueued = false;
 let hourglassCounter = 0;
 let startTime = Date.now();
 let pendingCoin = null;
@@ -82,6 +83,51 @@ let levelCompleted = false;
 let level2Unlocked = false;
 let freePlayMode = false;
 let currentLevel = 1;
+let audioContext = null;
+
+const ensureAudio = () => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+};
+
+const playTone = (frequency, duration, type = "sine", gainValue = 0.12) => {
+  if (!audioContext) return;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  osc.type = type;
+  osc.frequency.value = frequency;
+  gain.gain.value = gainValue;
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  osc.start();
+  osc.stop(audioContext.currentTime + duration);
+};
+
+const playClickSound = () => {
+  ensureAudio();
+  playTone(800, 0.04, "square", 0.08);
+};
+
+const playLeverSound = () => {
+  ensureAudio();
+  playTone(420, 0.08, "triangle", 0.12);
+  setTimeout(() => playTone(260, 0.08, "triangle", 0.1), 60);
+};
+
+const playSpinSound = () => {
+  ensureAudio();
+  playTone(300, 0.25, "sawtooth", 0.06);
+};
+
+const playWinSound = () => {
+  ensureAudio();
+  playTone(520, 0.12, "sine", 0.14);
+  setTimeout(() => playTone(700, 0.12, "sine", 0.12), 120);
+};
 
 const updateCredits = () => {
   creditsLabel.textContent = credits;
@@ -146,10 +192,18 @@ const showCenterMessage = (message) => {
   setTimeout(() => centerMessage.classList.remove("show"), 1600);
 };
 
+const updateLevelIndicator = () => {
+  if (levelIndicator) {
+    levelIndicator.textContent = `Level ${currentLevel}`;
+  }
+};
+
 const showLevelComplete = () => {
   levelCompleted = true;
   freePlayMode = false;
   stopSpinLoops();
+  shopOverlay.classList.remove("show");
+  shopOverlay.setAttribute("aria-hidden", "true");
   levelCompleteOverlay.classList.add("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "false");
   unlockLevel(2);
@@ -183,9 +237,16 @@ const stopSpinLoops = () => {
 
 const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   stopSpinLoops();
+  shopOverlay.classList.remove("show");
+  shopOverlay.setAttribute("aria-hidden", "true");
+  confirmOverlay.classList.remove("show");
+  confirmOverlay.setAttribute("aria-hidden", "true");
+  currentCoinResults = [];
+  coinResults.innerHTML = "";
   credits = 25;
   balance = -50;
   freeSpins = 0;
+  freeSpinQueued = false;
   winBonusMultiplier = 0;
   winBonusTurns = 0;
   doubleWinNext = false;
@@ -213,6 +274,7 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
   updateCoinControls();
   showPayout("Bereit!");
+  updateLevelIndicator();
 };
 const setLostState = (show) => {
   lostOverlay.classList.toggle("show", show);
@@ -294,6 +356,9 @@ const coinCatalog = [
     icon: "✨",
     description: "Nächste 5 Spins sind kostenlos.",
     onUse: () => {
+      if (freeSpins === 0) {
+        freeSpinQueued = true;
+      }
       freeSpins += 5;
       showToast("Bonuscoin aktiviert: 5 Freispiele");
     },
@@ -595,14 +660,18 @@ const spinReels = async () => {
 
   setLostState(false);
   isSpinning = true;
-  if (freeSpins > 0) {
-    freeSpins -= 1;
+  if (freeSpins > 0 || freeSpinQueued) {
+    if (freeSpinQueued) {
+      freeSpinQueued = false;
+    }
+    freeSpins = Math.max(0, freeSpins - 1);
   } else {
     credits -= spinCost;
   }
   updateCredits();
   updateBalance();
   showPayout("Rattersound läuft...");
+  playSpinSound();
 
   const results = reels.map(() => getRandomSymbol());
   const stopDelays = [600, 950, 1300];
@@ -718,6 +787,9 @@ const spinReels = async () => {
   showPayout(message, payoutValue > 0);
   winOverlay.classList.toggle("boost", bonusTriggered);
   showWin(payoutValue);
+  if (payoutValue > 0) {
+    playWinSound();
+  }
   bonusEvents.forEach((event, index) => {
     setTimeout(() => showCoinBonus(event.amount, event.label, event.icon), index * 150);
   });
@@ -750,13 +822,13 @@ leverButton.addEventListener("click", () => {
   autoSpin = false;
   clearTimeout(spinInterval);
   leverButton.classList.add("pulled");
-  leverHand.classList.add("pulling");
+  playLeverSound();
   setTimeout(() => leverButton.classList.remove("pulled"), 250);
-  setTimeout(() => leverHand.classList.remove("pulling"), 350);
   spinReels();
 });
 
 autoButton.addEventListener("click", () => {
+  playClickSound();
   autoSpin = !autoSpin;
   if (autoSpin) {
     spinReels();
@@ -768,24 +840,29 @@ autoButton.addEventListener("click", () => {
 });
 
 stakeSelect.addEventListener("change", () => {
+  playClickSound();
   updateStakeOptions();
 });
 
 stopButton.addEventListener("click", () => {
+  playClickSound();
   stopSpinLoops();
 });
 
 shopButton.addEventListener("click", () => {
+  playClickSound();
   shopOverlay.classList.add("show");
   shopOverlay.setAttribute("aria-hidden", "false");
 });
 
 shopClose.addEventListener("click", () => {
+  playClickSound();
   shopOverlay.classList.remove("show");
   shopOverlay.setAttribute("aria-hidden", "true");
 });
 
 restartButton.addEventListener("click", () => {
+  playClickSound();
   resetGameState({ keepPassives: false });
 });
 
@@ -800,6 +877,7 @@ creditNumber.addEventListener("input", () => {
 });
 
 buyCreditsButton.addEventListener("click", () => {
+  playClickSound();
   const amount = Number(creditNumber.value);
   const cost = amount * 2;
   openConfirm(`Credits kaufen? (${amount} Credits für ${cost} €)`, () => {
@@ -812,12 +890,14 @@ buyCreditsButton.addEventListener("click", () => {
 });
 
 autoBuyCheckbox.addEventListener("change", () => {
+  playClickSound();
   if (currentCoinResults.length) {
     renderCoinResults(currentCoinResults);
   }
 });
 
 sellCreditsButton.addEventListener("click", () => {
+  playClickSound();
   const amount = Number(sellNumber.value);
   if (amount > credits) {
     showToast("Nicht genug Credits zum Verkaufen.");
@@ -843,8 +923,12 @@ sellNumber.addEventListener("input", () => {
   sellRange.value = value;
 });
 
-rollCoinsButton.addEventListener("click", rollCoins);
+rollCoinsButton.addEventListener("click", () => {
+  playClickSound();
+  rollCoins();
+});
 rerollCoinsButton.addEventListener("click", () => {
+  playClickSound();
   if (!coinRolled) {
     showToast("Reroll erst nach einem Coin-Zug möglich.");
     return;
@@ -854,6 +938,7 @@ rerollCoinsButton.addEventListener("click", () => {
 
 inventorySlots.forEach((slot, index) => {
   slot.addEventListener("click", () => {
+    playClickSound();
     const coin = inventory[index];
     if (!coin) return;
     const existing = slot.querySelector(".coin-actions");
@@ -913,6 +998,7 @@ inventorySlots.forEach((slot, index) => {
 
 passiveSlots.forEach((slot, index) => {
   slot.addEventListener("click", () => {
+    playClickSound();
     const coin = passiveInventory[index];
     if (!coin) return;
     const existing = slot.querySelector(".coin-actions");
@@ -942,6 +1028,7 @@ passiveSlots.forEach((slot, index) => {
 });
 
 confirmCancel.addEventListener("click", () => {
+  playClickSound();
   confirmOverlay.classList.remove("show");
   confirmOverlay.setAttribute("aria-hidden", "true");
   pendingCoin = null;
@@ -949,6 +1036,7 @@ confirmCancel.addEventListener("click", () => {
 });
 
 confirmBuy.addEventListener("click", () => {
+  playClickSound();
   pendingAction?.();
   pendingCoin = null;
   pendingAction = null;
@@ -967,6 +1055,7 @@ updateCoinControls();
 gameShell.classList.add("hidden");
 levelButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    playClickSound();
     const level = button.dataset.level;
     if (level === "1") {
       currentLevel = 1;
@@ -990,6 +1079,7 @@ levelButtons.forEach((button) => {
 });
 
 backToStartButton.addEventListener("click", () => {
+  playClickSound();
   levelCompleteOverlay.classList.remove("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "true");
   startScreen.classList.remove("hidden");
@@ -997,6 +1087,7 @@ backToStartButton.addEventListener("click", () => {
 });
 
 freePlayButton.addEventListener("click", () => {
+  playClickSound();
   freePlayMode = true;
   levelCompleteOverlay.classList.remove("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "true");
