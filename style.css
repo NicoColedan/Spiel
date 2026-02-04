@@ -36,6 +36,7 @@ body.level-2 {
   --accent-2: #ffd166;
   --glow: rgba(93, 255, 180, 0.4);
   background: radial-gradient(circle at top, #1e3a2c, var(--bg) 70%);
+  font-family: "Trebuchet MS", "Palatino Linotype", "Georgia", serif;
 }
 
 .page {
@@ -263,8 +264,9 @@ header p {
 }
 
 body.level-2 .slot-machine {
-  background: linear-gradient(180deg, #1a2e24, #0b1711);
-  box-shadow: 0 25px 45px rgba(10, 40, 25, 0.45);
+  background: linear-gradient(180deg, #3a2a12, #1a1107);
+  box-shadow: 0 30px 50px rgba(35, 20, 5, 0.6);
+  border: 2px solid rgba(255, 206, 120, 0.3);
 }
 
 .cabinet {
@@ -278,8 +280,9 @@ body.level-2 .slot-machine {
 }
 
 body.level-2 .cabinet {
-  background: linear-gradient(180deg, rgba(93, 255, 180, 0.12), rgba(255, 209, 102, 0.08));
-  border-color: rgba(93, 255, 180, 0.3);
+  background: linear-gradient(180deg, rgba(255, 214, 140, 0.35), rgba(162, 104, 25, 0.35));
+  border-color: rgba(255, 210, 130, 0.6);
+  box-shadow: inset 0 0 30px rgba(46, 25, 6, 0.7);
 }
 
 .marquee {
@@ -297,9 +300,10 @@ body.level-2 .cabinet {
 }
 
 body.level-2 .marquee {
-  color: #e8fff3;
-  background: rgba(93, 255, 180, 0.18);
-  box-shadow: 0 0 20px rgba(93, 255, 180, 0.45);
+  color: #fff2cc;
+  background: linear-gradient(120deg, rgba(255, 203, 120, 0.45), rgba(196, 120, 30, 0.35));
+  box-shadow: 0 0 20px rgba(255, 200, 120, 0.45);
+  letter-spacing: 0.4em;
 }
 
 .screen {
@@ -312,7 +316,8 @@ body.level-2 .marquee {
 }
 
 body.level-2 .screen {
-  background: linear-gradient(180deg, rgba(93, 255, 180, 0.18), rgba(255, 209, 102, 0.12));
+  background: linear-gradient(180deg, rgba(255, 232, 170, 0.35), rgba(210, 146, 60, 0.2));
+  border: 2px solid rgba(255, 214, 140, 0.6);
 }
 
 .reels {
@@ -342,9 +347,23 @@ body.level-2 .screen {
 }
 
 body.level-2 .reel {
-  background: rgba(6, 18, 12, 0.85);
-  border-color: rgba(93, 255, 180, 0.2);
-  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.7);
+  background: linear-gradient(180deg, #f7e7bf 0%, #e6c78d 100%);
+  border: 2px solid #b57a2a;
+  box-shadow: inset 0 0 18px rgba(95, 55, 10, 0.45);
+}
+
+body.level-2 .reel::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+body.level-2 .symbol.main,
+body.level-2 .symbol.ghost {
+  text-shadow: 0 0 12px rgba(120, 70, 20, 0.6);
 }
 
 .reel.spinning::after {
@@ -657,22 +676,6 @@ body.level-2 .btn.primary {
 
 body.level-2 .panel {
   border-color: rgba(93, 255, 180, 0.2);
-}
-
-.credits {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  font-size: 1.1rem;
-  margin-bottom: 18px;
-}
-
-.credits strong {
-  font-size: 1.5rem;
-  color: var(--accent-2);
 }
 
 .rules h2 {
