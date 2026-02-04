@@ -117,12 +117,14 @@ header p {
   background: rgba(8, 10, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: 3.4rem;
+  justify-content: space-between;
+  font-size: 2.6rem;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
+  padding: 12px 0;
 }
 
 .reel.spinning::after {
@@ -144,6 +146,17 @@ header p {
 
 .symbol {
   transition: transform 0.2s ease;
+  line-height: 1;
+}
+
+.symbol.main {
+  font-size: 3.2rem;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.6);
+}
+
+.symbol.ghost {
+  opacity: 0.35;
+  filter: blur(0.5px);
 }
 
 .reel.spinning .symbol {
@@ -309,6 +322,28 @@ header p {
 
 .lever.pulled .lever-ball {
   transform: translateX(-50%) translateY(28px);
+}
+
+.lever-hand {
+  position: absolute;
+  right: -78px;
+  top: 86px;
+  width: 70px;
+  height: 140px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform 0.3s ease;
+}
+
+.lever-hand .hand-icon {
+  font-size: 2.4rem;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+}
+
+.lever-hand.pulling {
+  transform: translateY(58px) rotate(8deg);
 }
 
 .btn {
@@ -479,11 +514,12 @@ header p {
 
 .inventory-slots {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 56px);
   gap: 12px;
 }
 
 .inventory-slot {
+  width: 56px;
   height: 56px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -493,8 +529,8 @@ header p {
 }
 
 .inventory-slot.small {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
 }
 
 .inventory-slot .coin {
@@ -504,9 +540,9 @@ header p {
 }
 
 .inventory-slot.small .coin {
-  width: 30px;
-  height: 30px;
-  font-size: 0.9rem;
+  width: 38px;
+  height: 38px;
+  font-size: 1rem;
 }
 
 .coin {
