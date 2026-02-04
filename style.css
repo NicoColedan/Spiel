@@ -34,6 +34,70 @@ body {
   padding: 32px 16px 48px;
 }
 
+.start-screen {
+  width: min(820px, 92vw);
+  background: rgba(8, 10, 20, 0.75);
+  border-radius: 24px;
+  padding: 32px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+  margin: 0 auto 28px;
+}
+
+.start-screen h1 {
+  margin: 0 0 8px;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  color: #ffe7ff;
+}
+
+.start-screen p {
+  margin: 0 0 24px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.level-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.level-card {
+  border: none;
+  border-radius: 16px;
+  padding: 18px 24px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.level-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.35);
+}
+
+.level-card.level-one {
+  background: linear-gradient(120deg, rgba(77, 215, 255, 0.3), rgba(255, 77, 148, 0.25)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='120'%3E%3Ctext x='30' y='70' font-size='64'%3E%F0%9F%8D%92%20%F0%9F%94%94%20%E2%AD%90%20%F0%9F%92%8E%3C/text%3E%3C/svg%3E")
+      center/cover;
+  color: #fff6ff;
+}
+
+.level-card.locked {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.hidden {
+  display: none;
+}
+
 header {
   text-align: center;
   margin-bottom: 28px;
@@ -326,10 +390,10 @@ header p {
 
 .lever-hand {
   position: absolute;
-  right: -78px;
-  top: 86px;
-  width: 70px;
-  height: 140px;
+  right: -150px;
+  top: 60px;
+  width: 160px;
+  height: 180px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -338,12 +402,13 @@ header p {
 }
 
 .lever-hand .hand-icon {
-  font-size: 2.4rem;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+  font-size: 4rem;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+  transform: rotate(-12deg);
 }
 
 .lever-hand.pulling {
-  transform: translateY(58px) rotate(8deg);
+  transform: translate(-12px, 72px) rotate(12deg);
 }
 
 .btn {
@@ -505,6 +570,8 @@ header p {
   border-radius: 18px;
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  max-width: 640px;
 }
 
 .inventory h3 {
@@ -529,8 +596,8 @@ header p {
 }
 
 .inventory-slot.small {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
 }
 
 .inventory-slot .coin {
