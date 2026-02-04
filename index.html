@@ -60,7 +60,7 @@
               <div class="lost" id="lost">
                 <div class="lost-content">
                   <h2>Game Over</h2>
-                  <p>Dein Guthaben ist unter -1000 €.</p>
+                  <p id="lost-text">Dein Guthaben ist unter -1000 €.</p>
                   <button class="btn primary" id="restart">Neustart</button>
                 </div>
               </div>
@@ -92,6 +92,7 @@
                   <option value="5" selected>5 €</option>
                   <option value="10">10 €</option>
                   <option value="20">20 €</option>
+                  <option value="25">25 €</option>
                   <option value="50">50 €</option>
                 </select>
               </label>
@@ -151,7 +152,7 @@
       <div class="level-complete" id="level-complete" aria-hidden="true">
         <div class="level-complete-card">
           <h2>Level abgeschlossen!</h2>
-          <p>Du hast mehr als 300 € Guthaben erreicht.</p>
+          <p id="level-complete-text">Du hast mehr als 300 € Guthaben erreicht.</p>
           <div class="level-complete-actions">
             <button class="btn ghost" id="back-to-start">Zur Startseite</button>
             <button class="btn primary" id="free-play">Freies Spiel</button>
