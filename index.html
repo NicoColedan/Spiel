@@ -13,8 +13,14 @@
         <p>Wähle ein Level.</p>
         <div class="level-list">
           <button class="level-card level-one" data-level="1">Level 1</button>
-          <button class="level-card locked" data-level="2">Level 2 🔒</button>
-          <button class="level-card locked" data-level="3">Level 3 🔒</button>
+          <button class="level-card locked" data-level="2">
+            <span>Level 2</span>
+            <span class="lock-icon" aria-hidden="true">🔒</span>
+          </button>
+          <button class="level-card locked" data-level="3">
+            <span>Level 3</span>
+            <span class="lock-icon" aria-hidden="true">🔒</span>
+          </button>
         </div>
       </div>
 
@@ -95,8 +101,7 @@
               <div class="lever-ball"></div>
             </button>
             <div class="lever-hand" id="lever-hand" aria-hidden="true">
-              <div class="arm"></div>
-              <div class="hand"></div>
+              <span class="hand-icon">🖐️</span>
             </div>
 
             <div class="win" id="win">
@@ -145,6 +150,16 @@
       </div>
 
       <div class="center-message" id="center-message" aria-live="polite"></div>
+      <div class="level-complete" id="level-complete" aria-hidden="true">
+        <div class="level-complete-card">
+          <h2>Level abgeschlossen!</h2>
+          <p>Du hast mehr als 300 € Guthaben erreicht.</p>
+          <div class="level-complete-actions">
+            <button class="btn ghost" id="back-to-start">Zur Startseite</button>
+            <button class="btn primary" id="free-play">Freies Spiel</button>
+          </div>
+        </div>
+      </div>
 
       <div class="shop-overlay" id="shop-overlay" aria-hidden="true">
         <div class="shop-panel" role="dialog" aria-modal="true" aria-label="Shop">
