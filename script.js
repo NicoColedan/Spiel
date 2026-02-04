@@ -38,7 +38,9 @@ const coinBonus = document.getElementById("coin-bonus");
 const leverHand = document.getElementById("lever-hand");
 const startScreen = document.getElementById("start-screen");
 const gameLayout = document.getElementById("game");
+const gameShell = document.getElementById("game-shell");
 const levelButtons = Array.from(document.querySelectorAll(".level-card"));
+const centerMessage = document.getElementById("center-message");
 
 const symbols = [
   { icon: "🍒", twoMult: 1.2, threeMult: 4 },
@@ -127,12 +129,21 @@ const showPayout = (message, highlight = false) => {
   payout.style.color = highlight ? "#ffe680" : "#4dd7ff";
 };
 
+const showCenterMessage = (message) => {
+  centerMessage.textContent = message;
+  centerMessage.classList.add("show");
+  setTimeout(() => centerMessage.classList.remove("show"), 1600);
+};
+
 const setLostState = (show) => {
   lostOverlay.classList.toggle("show", show);
 };
 
 const showWin = (amount) => {
-  if (amount <= 0) return;
+  if (amount <= 0) {
+    winOverlay.classList.remove("show");
+    return;
+  }
   winAmount.textContent = `+${amount}`;
   winOverlay.classList.remove("show");
   void winOverlay.offsetWidth;
@@ -903,15 +914,15 @@ renderInventory();
 rollCoinsButton.textContent = `Coin ziehen (${coinPrice} Credits)`;
 rerollCoinsButton.textContent = `Reroll (${coinPrice} Credits)`;
 updateCoinControls();
-gameLayout.classList.add("hidden");
+gameShell.classList.add("hidden");
 levelButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const level = button.dataset.level;
     if (level !== "1") {
-      showToast("Bitte zuerst Level 1 abschließen.");
+      showCenterMessage("Bitte zuerst Level 1 abschließen.");
       return;
     }
     startScreen.classList.add("hidden");
-    gameLayout.classList.remove("hidden");
+    gameShell.classList.remove("hidden");
   });
 });
