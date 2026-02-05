@@ -25,6 +25,7 @@
       </div>
 
       <div id="game-shell">
+        <button class="btn ghost home-button" id="home-button">🏠 Home</button>
         <header>
           <h1>Nicos Abzockgerät</h1>
           <p>Betätige den Hebel und teste dein Glück.</p>
@@ -39,7 +40,7 @@
             </div>
 
             <div class="screen" id="screen">
-              <div class="reels" aria-live="polite">
+              <div class="reels" id="reels" aria-live="polite">
                 <div class="reel" data-reel="0">
                   <div class="symbol ghost">⭐</div>
                   <div class="symbol main">🍒</div>
@@ -56,6 +57,7 @@
                   <div class="symbol ghost">🍒</div>
                 </div>
               </div>
+              <svg class="payline-overlay" id="payline-overlay" aria-hidden="true"></svg>
               <div class="payout" id="payout">Bereit!</div>
               <div class="lost" id="lost">
                 <div class="lost-content">
@@ -127,14 +129,7 @@
         <aside class="panel">
           <div class="rules">
             <h2>Auszahlung</h2>
-            <ul>
-              <li>🍒🍒 = <span data-multiplier="1.2">6</span>, 🍒🍒🍒 = <span data-multiplier="4">20</span></li>
-              <li>🔔🔔 = <span data-multiplier="1.4">7</span>, 🔔🔔🔔 = <span data-multiplier="4.8">24</span></li>
-              <li>⭐⭐ = <span data-multiplier="1.6">8</span>, ⭐⭐⭐ = <span data-multiplier="6">30</span></li>
-              <li>💎💎 = <span data-multiplier="2.2">11</span>, 💎💎💎 = <span data-multiplier="10">50</span></li>
-              <li>7️⃣7️⃣ = <span data-multiplier="3">15</span>, 7️⃣7️⃣7️⃣ = <span data-multiplier="14">70</span></li>
-              <li>❌❌ = <span data-multiplier="0">0</span>, ❌❌❌ = <span data-refund>5</span></li>
-            </ul>
+            <ul id="payout-list"></ul>
             <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
           </div>
           <button class="btn shop" id="shop" aria-label="Shop öffnen">
