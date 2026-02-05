@@ -163,7 +163,6 @@ const renderPayoutTable = () => {
   payoutList.appendChild(info);
 };
 
-
 const ensureAudio = () => {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1338,7 +1337,6 @@ levelButtons.forEach((button) => {
   });
 });
 
-
 homeButton.addEventListener("click", () => {
   playClickSound();
   stopSpinLoops();
@@ -1366,3 +1364,4 @@ freePlayButton.addEventListener("click", () => {
   levelCompleteOverlay.classList.remove("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "true");
 });
+``

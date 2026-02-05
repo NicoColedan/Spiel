@@ -26,164 +26,128 @@
 
       <div id="game-shell">
         <button class="btn ghost home-button" id="home-button">🏠 Home</button>
+
         <header>
           <h1>Nicos Abzockgerät</h1>
           <p>Betätige den Hebel und teste dein Glück.</p>
         </header>
+
         <div class="level-indicator" id="level-indicator">Level 1</div>
 
         <main class="layout" id="game">
-        <section class="slot-machine">
-          <div class="cabinet">
-            <div class="marquee">
-              <span>Nicos Abzockgerät</span>
+          <section class="slot-machine">
+            <div class="cabinet">
+              <div class="marquee">
+                <span>Nicos Abzockgerät</span>
+              </div>
+
+              <div class="screen" id="screen">
+                <div class="reels" id="reels" aria-live="polite">
+                  <div class="reel" data-reel="0">
+                    <div class="symbol ghost">⭐</div>
+                    <div class="symbol main">🍒</div>
+                    <div class="symbol ghost">💎</div>
+                  </div>
+                  <div class="reel" data-reel="1">
+                    <div class="symbol ghost">🍒</div>
+                    <div class="symbol main">⭐</div>
+                    <div class="symbol ghost">7️⃣</div>
+                  </div>
+                  <div class="reel" data-reel="2">
+                    <div class="symbol ghost">🔔</div>
+                    <div class="symbol main">💎</div>
+                    <div class="symbol ghost">🍒</div>
+                  </div>
+                </div>
+
+                <svg class="payline-overlay" id="payline-overlay" aria-hidden="true"></svg>
+
+                <div class="payout" id="payout">Bereit!</div>
+
+                <div class="lost" id="lost">
+                  <div class="lost-content">
+                    <h2>Game Over</h2>
+                    <p id="lost-text">Dein Guthaben ist unter -1000 €.</p>
+                    <button class="btn primary" id="restart">Neustart</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status">
+                <div class="status-item">
+                  <span>Guthaben</span>
+                  <strong id="balance">-50 €</strong>
+                </div>
+                <div class="status-item">
+                  <span>Spielzeit</span>
+                  <strong id="timer">00:00</strong>
+                </div>
+              </div>
+
+              <div class="controls">
+                <div class="controls-left">
+                  <button class="btn icon" id="auto" aria-label="Auto-Spin">
+                    <span class="spin-icon" aria-hidden="true">⟳</span>
+                  </button>
+                  <button class="btn ghost" id="stop">Stop</button>
+                </div>
+
+                <label class="stake">
+                  <span>Einsatz</span>
+                  <select id="stake">
+                    <option value="1">1 €</option>
+                    <option value="2">2 €</option>
+                    <option value="5" selected>5 €</option>
+                    <option value="10">10 €</option>
+                    <option value="20">20 €</option>
+                    <option value="25">25 €</option>
+                    <option value="50">50 €</option>
+                  </select>
+                </label>
+              </div>
+
+              <button class="lever" id="lever" aria-label="Hebel ziehen">
+                <div class="lever-stick"></div>
+                <div class="lever-ball"></div>
+              </button>
+
+              <div class="win" id="win">
+                <span id="win-amount">+0</span>
+              </div>
+              <div class="coin-bonus" id="coin-bonus" aria-live="polite"></div>
             </div>
 
-            <div class="screen" id="screen">
-              <div class="reels" id="reels" aria-live="polite">
-                <div class="reel" data-reel="0">
-                  <div class="symbol ghost">⭐</div>
-                  <div class="symbol main">🍒</div>
-                  <div class="symbol ghost">💎</div>
-                </div>
-                <div class="reel" data-reel="1">
-                  <div class="symbol ghost">🍒</div>
-                  <div class="symbol main">⭐</div>
-                  <div class="symbol ghost">7️⃣</div>
-                </div>
-                <div class="reel" data-reel="2">
-                  <div class="symbol ghost">🔔</div>
-                  <div class="symbol main">💎</div>
-                  <div class="symbol ghost">🍒</div>
-                </div>
+            <div class="inventory">
+              <h3>Inventar</h3>
+              <div class="inventory-slots" id="inventory">
+                <button class="inventory-slot" data-slot="0"></button>
+                <button class="inventory-slot" data-slot="1"></button>
+                <button class="inventory-slot" data-slot="2"></button>
+                <button class="inventory-slot" data-slot="3"></button>
               </div>
-              <svg class="payline-overlay" id="payline-overlay" aria-hidden="true"></svg>
-              <div class="payout" id="payout">Bereit!</div>
-              <div class="lost" id="lost">
-                <div class="lost-content">
-                  <h2>Game Over</h2>
-                  <p id="lost-text">Dein Guthaben ist unter -1000 €.</p>
-                  <button class="btn primary" id="restart">Neustart</button>
-                </div>
+              <div class="passive-coins" id="passive-coins">
+                <button class="inventory-slot small" data-passive-slot="0"></button>
+                <button class="inventory-slot small" data-passive-slot="1"></button>
               </div>
             </div>
+          </section>
 
-            <div class="status">
-              <div class="status-item">
-                <span>Guthaben</span>
-                <strong id="balance">-50 €</strong>
-              </div>
-              <div class="status-item">
-                <span>Spielzeit</span>
-                <strong id="timer">00:00</strong>
-              </div>
+          <aside class="panel">
+            <div class="rules">
+              <h2>Auszahlung</h2>
+              <ul id="payout-list"></ul>
+              <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
             </div>
-
-            <div class="controls">
-              <div class="controls-left">
-                <button class="btn icon" id="auto" aria-label="Auto-Spin">
-                  <span class="spin-icon" aria-hidden="true">⟳</span>
-                </button>
-                <button class="btn ghost" id="stop">Stop</button>
-              </div>
-              <label class="stake">
-                <span>Einsatz</span>
-                <select id="stake">
-                  <option value="1">1 €</option>
-                  <option value="2">2 €</option>
-                  <option value="5" selected>5 €</option>
-                  <option value="10">10 €</option>
-                  <option value="20">20 €</option>
-                  <option value="25">25 €</option>
-                  <option value="50">50 €</option>
-                </select>
-              </label>
-            </div>
-
-            <button class="lever" id="lever" aria-label="Hebel ziehen">
-              <div class="lever-stick"></div>
-              <div class="lever-ball"></div>
+            <button class="btn shop" id="shop" aria-label="Shop öffnen">
+              <span aria-hidden="true">🛒</span>
             </button>
-
-            <div class="win" id="win">
-              <span id="win-amount">+0</span>
-            </div>
-            <div class="coin-bonus" id="coin-bonus" aria-live="polite"></div>
-          </div>
-
-          <div class="inventory">
-            <h3>Inventar</h3>
-            <div class="inventory-slots" id="inventory">
-              <button class="inventory-slot" data-slot="0" aria-label="Inventar Slot 1"></button>
-              <button class="inventory-slot" data-slot="1" aria-label="Inventar Slot 2"></button>
-              <button class="inventory-slot" data-slot="2" aria-label="Inventar Slot 3"></button>
-              <button class="inventory-slot" data-slot="3" aria-label="Inventar Slot 4"></button>
-            </div>
-            <div class="passive-coins" id="passive-coins">
-              <button class="inventory-slot small" data-passive-slot="0" aria-label="Passiver Slot 1"></button>
-              <button class="inventory-slot small" data-passive-slot="1" aria-label="Passiver Slot 2"></button>
-            </div>
-          </div>
-        </section>
-
-        <aside class="panel">
-          <div class="rules">
-            <h2>Auszahlung</h2>
-            <ul id="payout-list"></ul>
-            <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
-          </div>
-          <button class="btn shop" id="shop" aria-label="Shop öffnen">
-            <span aria-hidden="true">🛒</span>
-          </button>
-        </aside>
+          </aside>
         </main>
       </div>
 
       <div class="center-message" id="center-message" aria-live="polite"></div>
-      <div class="level-complete" id="level-complete" aria-hidden="true">
-        <div class="level-complete-card">
-          <h2>Level abgeschlossen!</h2>
-          <p id="level-complete-text">Du hast mehr als 300 € Guthaben erreicht.</p>
-          <div class="level-complete-actions">
-            <button class="btn ghost" id="back-to-start">Zur Startseite</button>
-            <button class="btn primary" id="free-play">Freies Spiel</button>
-          </div>
-        </div>
-      </div>
 
-      <div class="shop-overlay" id="shop-overlay" aria-hidden="true">
-        <div class="shop-panel" role="dialog" aria-modal="true" aria-label="Shop">
-          <div class="shop-header">
-            <h2>Shop</h2>
-            <button class="btn ghost" id="shop-close">Schließen</button>
-          </div>
-
-          <div class="shop-section">
-            <h3>Coin-Automat</h3>
-            <button class="btn" id="roll-coins">Coin ziehen (25 €)</button>
-            <div class="coin-spinner" id="coin-spinner" aria-hidden="true">
-              <span class="spinner-coin">🪙</span>
-              <span class="spinner-coin">🪙</span>
-              <span class="spinner-coin">🪙</span>
-            </div>
-            <div class="coin-results" id="coin-results"></div>
-            <button class="btn ghost" id="reroll-coins" disabled>Reroll (25 €)</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="confirm-overlay" id="confirm-overlay" aria-hidden="true">
-        <div class="confirm-panel" role="dialog" aria-modal="true" aria-label="Bestätigen">
-          <h3>Kauf bestätigen?</h3>
-          <p id="confirm-text">Möchtest du diesen Coin kaufen?</p>
-          <div class="confirm-actions">
-            <button class="btn ghost" id="confirm-cancel">Abbrechen</button>
-            <button class="btn primary" id="confirm-buy">Bestätigen</button>
-          </div>
-        </div>
-      </div>
+      <script src="script.js"></script>
     </div>
-
-    <script src="script.js"></script>
   </body>
 </html>
