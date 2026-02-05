@@ -17,11 +17,11 @@
           <button class="level-card level-one" data-level="1">Level 1</button>
           <button class="level-card locked" data-level="2">
             <span>Level 2</span>
-            <span class="lock-icon" aria-hidden="true">🔒</span>
+            <span class="lock-icon">🔒</span>
           </button>
           <button class="level-card locked" data-level="3">
             <span>Level 3</span>
-            <span class="lock-icon" aria-hidden="true">🔒</span>
+            <span class="lock-icon">🔒</span>
           </button>
         </div>
       </div>
@@ -44,6 +44,7 @@
                 <span>Nicos Abzockgerät</span>
               </div>
 
+              <!-- SCREEN -->
               <div class="screen" id="screen">
                 <div class="reels" aria-live="polite">
                   <div class="reel" data-reel="0">
@@ -74,6 +75,7 @@
                 </div>
               </div>
 
+              <!-- STATUS -->
               <div class="status">
                 <div class="status-item">
                   <span>Guthaben</span>
@@ -85,11 +87,10 @@
                 </div>
               </div>
 
+              <!-- CONTROLS -->
               <div class="controls">
                 <div class="controls-left">
-                  <button class="btn icon" id="auto" aria-label="Auto-Spin">
-                    <span aria-hidden="true">⟳</span>
-                  </button>
+                  <button class="btn icon" id="auto" aria-label="Auto-Spin">⟳</button>
                   <button class="btn ghost" id="stop">Stop</button>
                 </div>
 
@@ -116,7 +117,7 @@
                 <span id="win-amount">+0</span>
               </div>
 
-              <div class="coin-bonus" id="coin-bonus" aria-live="polite"></div>
+              <div class="coin-bonus" id="coin-bonus"></div>
             </div>
 
             <!-- INVENTORY -->
@@ -144,9 +145,7 @@
               <p class="note">Zwei gleiche Symbole zahlen weniger als drei.</p>
             </div>
 
-            <button class="btn shop" id="shop" aria-label="Shop öffnen">
-              🛒
-            </button>
+            <button class="btn shop" id="shop" aria-label="Shop öffnen">🛒</button>
           </aside>
         </main>
       </div>
