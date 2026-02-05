@@ -30,12 +30,15 @@ body {
 }
 
 body.level-2 {
-  --bg: #07140f;
-  --panel: #0e2017;
-  --accent: #5dffb4;
-  --accent-2: #ffd166;
-  --glow: rgba(93, 255, 180, 0.4);
-  background: radial-gradient(circle at top, #1e3a2c, var(--bg) 70%);
+  --bg: #2a1308;
+  --panel: #2f1609;
+  --accent: #ffd08a;
+  --accent-2: #f6e4b4;
+  --glow: rgba(255, 180, 90, 0.55);
+  background:
+    radial-gradient(circle at top, #ffb35a 0%, #7c2d12 36%, #2c1208 70%, var(--bg) 100%),
+    linear-gradient(160deg, rgba(255, 220, 150, 0.06) 20%, transparent 20%),
+    linear-gradient(200deg, rgba(255, 220, 150, 0.05) 22%, transparent 22%);
   font-family: "Trebuchet MS", "Palatino Linotype", "Georgia", serif;
 }
 
@@ -76,6 +79,7 @@ body.level-2 {
 }
 
 .level-card {
+  position: relative;
   border: none;
   border-radius: 16px;
   padding: 22px 28px;
@@ -100,6 +104,28 @@ body.level-2 {
       center/cover;
   color: #fff6ff;
 }
+
+.level-card[data-level="2"],
+.level-card[data-level="2"].locked,
+.level-card[data-level="2"].unlocked {
+  background:
+    radial-gradient(circle at 82% 22%, rgba(255, 228, 163, 0.3), transparent 42%),
+    linear-gradient(155deg, rgba(246, 182, 109, 0.55), rgba(120, 52, 18, 0.7) 58%, rgba(52, 23, 9, 0.9));
+  border: 1px solid rgba(255, 220, 150, 0.4);
+  color: #fff2d0;
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 175, 0.12), 0 14px 24px rgba(33, 13, 4, 0.45);
+}
+
+.level-card[data-level="2"]::before {
+  content: "▲    ▲";
+  position: absolute;
+  left: 16px;
+  bottom: 10px;
+  font-size: 1.25rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 224, 167, 0.45);
+}
+
 
 .level-card.locked {
   background: rgba(255, 255, 255, 0.05);
@@ -228,9 +254,17 @@ header {
 }
 
 body.level-2 .level-indicator {
-  border-color: rgba(93, 255, 180, 0.4);
-  box-shadow: 0 0 16px rgba(93, 255, 180, 0.35);
+  border-color: rgba(255, 215, 140, 0.45);
+  box-shadow: 0 0 16px rgba(255, 180, 90, 0.45);
 }
+
+.home-button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 6;
+}
+
 
 header h1 {
   margin: 0 0 8px;
@@ -260,13 +294,13 @@ header p {
   display: flex;
   justify-content: center;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 body.level-2 .slot-machine {
-  background: linear-gradient(180deg, #3a2a12, #1a1107);
-  box-shadow: 0 30px 50px rgba(35, 20, 5, 0.6);
-  border: 2px solid rgba(255, 206, 120, 0.3);
+  background: linear-gradient(180deg, #6c2f16, #2c1208);
+  box-shadow: 0 30px 50px rgba(25, 8, 2, 0.7);
+  border: 2px solid rgba(255, 206, 120, 0.45);
 }
 
 .cabinet {
@@ -280,9 +314,9 @@ body.level-2 .slot-machine {
 }
 
 body.level-2 .cabinet {
-  background: linear-gradient(180deg, rgba(255, 214, 140, 0.35), rgba(162, 104, 25, 0.35));
-  border-color: rgba(255, 210, 130, 0.6);
-  box-shadow: inset 0 0 30px rgba(46, 25, 6, 0.7);
+  background: linear-gradient(180deg, rgba(255, 224, 162, 0.55), rgba(150, 75, 15, 0.45));
+  border-color: rgba(255, 220, 150, 0.72);
+  box-shadow: inset 0 0 34px rgba(46, 20, 4, 0.76);
 }
 
 .marquee {
@@ -316,20 +350,20 @@ body.level-2 .marquee {
 }
 
 body.level-2 .screen {
-  background: linear-gradient(180deg, rgba(255, 232, 170, 0.35), rgba(210, 146, 60, 0.2));
-  border: 2px solid rgba(255, 214, 140, 0.6);
+  background: linear-gradient(180deg, rgba(255, 235, 180, 0.48), rgba(180, 95, 25, 0.35));
+  border: 2px solid rgba(255, 220, 150, 0.72);
 }
 
 .reels {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 12px;
   align-items: center;
   margin-bottom: 20px;
 }
 
 .reel {
-  height: 220px;
+  height: 210px;
   border-radius: 16px;
   background: rgba(8, 10, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -337,7 +371,7 @@ body.level-2 .screen {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  font-size: 2.6rem;
+  font-size: 2.1rem;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
@@ -364,6 +398,15 @@ body.level-2 .reel::before {
 body.level-2 .symbol.main,
 body.level-2 .symbol.ghost {
   text-shadow: 0 0 12px rgba(120, 70, 20, 0.6);
+  filter: saturate(0.92);
+}
+
+body.level-2 .symbol.main {
+  font-size: 3.15rem;
+}
+
+body.level-2 .symbol.ghost {
+  font-size: 2.85rem;
 }
 
 .reel.spinning::after {
@@ -399,6 +442,17 @@ body.level-2 .symbol.ghost {
   font-size: 3.1rem;
 }
 
+.symbol.row-0,
+.symbol.row-2 {
+  opacity: 0.65;
+  font-size: 1.7em;
+}
+
+.symbol.row-1 {
+  font-size: 2.1em;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+}
+
 .reel.spinning .symbol {
   animation: jitter 0.25s infinite;
 }
@@ -412,6 +466,32 @@ body.level-2 .symbol.ghost {
   }
   100% {
     transform: translateY(-8px) scale(1.05);
+  }
+}
+
+.payline-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.payline {
+  fill: none;
+  stroke: #ffe57d;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(255, 229, 125, 0.95));
+  stroke-dasharray: 8 7;
+  animation: lineFlow 0.9s linear infinite;
+}
+
+@keyframes lineFlow {
+  to {
+    stroke-dashoffset: -30;
   }
 }
 
@@ -675,7 +755,7 @@ body.level-2 .btn.primary {
 }
 
 body.level-2 .panel {
-  border-color: rgba(93, 255, 180, 0.2);
+  border-color: rgba(255, 205, 130, 0.35);
 }
 
 .rules h2 {
@@ -713,9 +793,9 @@ body.level-2 .panel {
 }
 
 body.level-2 .btn.shop {
-  background: rgba(93, 255, 180, 0.18);
-  border-color: rgba(93, 255, 180, 0.6);
-  box-shadow: 0 0 18px rgba(93, 255, 180, 0.35);
+  background: rgba(255, 186, 102, 0.2);
+  border-color: rgba(255, 211, 143, 0.65);
+  box-shadow: 0 0 18px rgba(255, 190, 105, 0.42);
 }
 
 .inventory {
@@ -724,13 +804,13 @@ body.level-2 .btn.shop {
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
-  max-width: 720px;
+  max-width: 640px;
   margin: 0 auto;
 }
 
 body.level-2 .inventory {
-  background: rgba(6, 18, 12, 0.65);
-  border-color: rgba(93, 255, 180, 0.2);
+  background: rgba(52, 23, 8, 0.72);
+  border-color: rgba(255, 205, 130, 0.35);
 }
 
 .inventory h3 {
@@ -1141,7 +1221,7 @@ body.level-2 .inventory {
   }
 
   .reel {
-    height: 150px;
-    font-size: 3rem;
+    height: 140px;
+    font-size: 2.4rem;
   }
 }
