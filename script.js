@@ -1,8 +1,3 @@
-diff --git a/script.js b/script.js
-index fb120ed6934f8ec5f9041bdfa38ac0cfcb9212fc..586c2d00c2f880aa0bdca86fafdfbd8d78646176 100644
---- a/script.js
-+++ b/script.js
-@@ -1,183 +1,303 @@
 -const reels = Array.from(document.querySelectorAll(".reel"));
 +let reels = Array.from(document.querySelectorAll(".reel"));
 +const reelsContainer = document.getElementById("reels");
