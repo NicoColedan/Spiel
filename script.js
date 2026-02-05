@@ -1,3 +1,7 @@
+diff --git a/script.js b/script.js
+index fb120ed6934f8ec5f9041bdfa38ac0cfcb9212fc..586c2d00c2f880aa0bdca86fafdfbd8d78646176 100644
+--- a/script.js
++++ b/script.js
 @@ -1,183 +1,303 @@
 -const reels = Array.from(document.querySelectorAll(".reel"));
 +let reels = Array.from(document.querySelectorAll(".reel"));
@@ -596,7 +600,7 @@
        hourglassCounter = hourglassTicks;
        updateBalance();
        showToast(`Hourglass +${gained} €`);
-@@ -622,255 +840,322 @@ const ensureBalance = () => {
+@@ -622,255 +840,326 @@ const ensureBalance = () => {
  };
  
  const rollCoins = (isReroll = false) => {
@@ -652,10 +656,13 @@
  };
  
  const startReelSpin = (index) => {
++  const reel = reels[index];
++  if (!reel) return;
    if (reelIntervals.has(index)) {
      clearInterval(reelIntervals.get(index));
    }
-   reels[index].classList.add("spinning");
+-  reels[index].classList.add("spinning");
++  reel.classList.add("spinning");
    const intervalId = setInterval(() => {
 -    const randomSymbol = getRandomSymbol();
 -    applySymbol(randomSymbol, index);
@@ -667,13 +674,16 @@
  
 -const stopReelSpin = (index, finalSymbol) => {
 +const stopReelSpin = (index, finalColumn) => {
++  const reel = reels[index];
++  if (!reel) return;
    const intervalId = reelIntervals.get(index);
    if (intervalId) {
      clearInterval(intervalId);
      reelIntervals.delete(index);
    }
-   reels[index].classList.remove("spinning");
+-  reels[index].classList.remove("spinning");
 -  applySymbol(finalSymbol, index);
++  reel.classList.remove("spinning");
 +  applyColumnSymbols(index, finalColumn);
 +};
 +
@@ -975,7 +985,7 @@
    playClickSound();
    updateStakeOptions();
  });
-@@ -1005,65 +1290,70 @@ passiveSlots.forEach((slot, index) => {
+@@ -1005,65 +1294,70 @@ passiveSlots.forEach((slot, index) => {
  confirmCancel.addEventListener("click", () => {
    playClickSound();
    confirmOverlay.classList.remove("show");
