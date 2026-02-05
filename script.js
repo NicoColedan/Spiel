@@ -7,8 +7,6 @@ const leverButton = document.getElementById("lever");
 const winOverlay = document.getElementById("win");
 const winAmount = document.getElementById("win-amount");
 const stakeSelect = document.getElementById("stake");
-const payoutMultipliers = Array.from(document.querySelectorAll("[data-multiplier]"));
-const payoutRefund = document.querySelector("[data-refund]");
 const shopButton = document.getElementById("shop");
 const shopOverlay = document.getElementById("shop-overlay");
 const shopClose = document.getElementById("shop-close");
@@ -38,15 +36,27 @@ const freePlayButton = document.getElementById("free-play");
 const levelIndicator = document.getElementById("level-indicator");
 const lostText = document.getElementById("lost-text");
 const levelCompleteText = document.getElementById("level-complete-text");
+const homeButton = document.getElementById("home-button");
+const payoutList = document.getElementById("payout-list");
 
-const symbols = [
-  { icon: "🍒", twoMult: 1.2, threeMult: 4 },
-  { icon: "🔔", twoMult: 1.4, threeMult: 4.8 },
-  { icon: "⭐", twoMult: 1.6, threeMult: 6 },
-  { icon: "💎", twoMult: 2.2, threeMult: 10 },
-  { icon: "7️⃣", twoMult: 3, threeMult: 14 },
-  { icon: "❌", twoMult: 0, threeMult: "refund" },
-];
+const levelSymbolSets = {
+  1: [
+    { icon: "🍒", twoMult: 1.2, threeMult: 4 },
+    { icon: "🔔", twoMult: 1.4, threeMult: 4.8 },
+    { icon: "⭐", twoMult: 1.6, threeMult: 6 },
+    { icon: "💎", twoMult: 2.2, threeMult: 10 },
+    { icon: "7️⃣", twoMult: 3, threeMult: 14 },
+    { icon: "❌", twoMult: 0, threeMult: "refund" },
+  ],
+  2: [
+    { icon: "🦅", twoMult: 1.4, threeMult: 5 },
+    { icon: "📜", twoMult: 1.7, threeMult: 6.2 },
+    { icon: "👑", twoMult: 2, threeMult: 8 },
+    { icon: "🧿", twoMult: 2.5, threeMult: 10 },
+    { icon: "💰", twoMult: 3.3, threeMult: 14 },
+    { icon: "❌", twoMult: 0, threeMult: "refund" },
+  ],
+};
 
 let spinCost = 5;
 let balance = -50;
@@ -75,7 +85,7 @@ let coinPurchased = false;
 let coinRolled = false;
 let gameOver = false;
 let levelCompleted = false;
-let level2Unlocked = false;
+let level2Unlocked = true;
 let freePlayMode = false;
 let currentLevel = 1;
 let audioContext = null;
@@ -87,6 +97,29 @@ const levelSettings = {
 };
 
 const getLevelSettings = () => levelSettings[currentLevel] ?? levelSettings[1];
+
+const getSymbolsForLevel = (level) => levelSymbolSets[level] ?? levelSymbolSets[1];
+const getCurrentSymbols = () => getSymbolsForLevel(currentLevel);
+
+const renderPayoutTable = () => {
+  if (!payoutList) return;
+  payoutList.innerHTML = "";
+  getCurrentSymbols().forEach((symbol) => {
+    const row = document.createElement("li");
+    const two = document.createElement("span");
+    two.dataset.multiplier = String(symbol.twoMult);
+    const three = document.createElement("span");
+    if (symbol.threeMult === "refund") {
+      three.dataset.refund = "true";
+      three.textContent = String(spinCost);
+    } else {
+      three.dataset.multiplier = String(symbol.threeMult);
+    }
+    row.append(`${symbol.icon}${symbol.icon} = `, two, `, ${symbol.icon}${symbol.icon}${symbol.icon} = `, three);
+    payoutList.appendChild(row);
+  });
+};
+
 
 const ensureAudio = () => {
   if (!audioContext) {
@@ -257,6 +290,7 @@ function applyLevelSettings() {
     stakeSelect.value = String(minStake);
   }
   spinCost = Number(stakeSelect.value);
+  renderPayoutTable();
   updatePayoutTable();
   if (lostText) {
     lostText.textContent = `Dein Guthaben ist unter ${gameOverLimit} €.`;
@@ -348,6 +382,76 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   showPayout("Bereit!");
   updateLevelIndicator();
 };
+const levelStates = {};
+
+const saveCurrentLevelState = () => {
+  levelStates[currentLevel] = {
+    balance,
+    freeSpins,
+    freeSpinQueued,
+    winBonusMultiplier,
+    winBonusTurns,
+    doubleWinNext,
+    doubleWinQueue,
+    luckyPunchArmed,
+    luckyPunchQueue,
+    lastSpinWin,
+    hourglassCounter,
+    startTime,
+    coinPrice,
+    currentRollPrice,
+    coinPurchased,
+    coinRolled,
+    gameOver,
+    gameOverSoundPlayed,
+    levelCompleted,
+    freePlayMode,
+    inventory: inventory.map((coin) => (coin ? { ...coin } : null)),
+    passiveInventory: passiveInventory.map((coin) => (coin ? { ...coin } : null)),
+    passives: Array.from(passives),
+    stakeValue: stakeSelect.value,
+  };
+};
+
+const restoreLevelState = (level) => {
+  const state = levelStates[level];
+  if (!state) return false;
+  stopSpinLoops();
+  balance = state.balance;
+  freeSpins = state.freeSpins;
+  freeSpinQueued = state.freeSpinQueued;
+  winBonusMultiplier = state.winBonusMultiplier;
+  winBonusTurns = state.winBonusTurns;
+  doubleWinNext = state.doubleWinNext;
+  doubleWinQueue = state.doubleWinQueue;
+  luckyPunchArmed = state.luckyPunchArmed;
+  luckyPunchQueue = state.luckyPunchQueue;
+  lastSpinWin = state.lastSpinWin;
+  hourglassCounter = state.hourglassCounter;
+  startTime = state.startTime;
+  coinPrice = state.coinPrice;
+  currentRollPrice = state.currentRollPrice;
+  coinPurchased = state.coinPurchased;
+  coinRolled = state.coinRolled;
+  gameOver = state.gameOver;
+  gameOverSoundPlayed = state.gameOverSoundPlayed;
+  levelCompleted = state.levelCompleted;
+  freePlayMode = state.freePlayMode;
+  inventory.splice(0, inventory.length, ...state.inventory.map((coin) => (coin ? { ...coin } : null)));
+  passiveInventory.splice(0, passiveInventory.length, ...state.passiveInventory.map((coin) => (coin ? { ...coin } : null)));
+  passives.clear();
+  state.passives.forEach((entry) => passives.add(entry));
+  stakeSelect.value = state.stakeValue;
+  setLostState(gameOver);
+  renderInventory();
+  applyLevelSettings();
+  updateBalance();
+  rollCoinsButton.textContent = `Coin ziehen (${coinPrice} €)`;
+  rerollCoinsButton.textContent = `Reroll (${currentRollPrice} €)`;
+  updateCoinControls();
+  return true;
+};
+
 const setLostState = (show) => {
   lostOverlay.classList.toggle("show", show);
 };
@@ -365,6 +469,7 @@ const showWin = (amount) => {
 
 const updateStakeOptions = () => {
   spinCost = Number(stakeSelect.value);
+  renderPayoutTable();
   updatePayoutTable();
 };
 
@@ -374,6 +479,8 @@ const updateCoinControls = () => {
 };
 
 const updatePayoutTable = () => {
+  const payoutMultipliers = Array.from(document.querySelectorAll("[data-multiplier]"));
+  const payoutRefund = document.querySelector("[data-refund]");
   payoutMultipliers.forEach((entry) => {
     const multiplier = Number(entry.dataset.multiplier);
     const value = Math.round(multiplier * spinCost);
@@ -644,6 +751,7 @@ const rollCoins = (isReroll = false) => {
 };
 
 const getRandomSymbol = () => {
+  const symbols = getCurrentSymbols();
   const choice = symbols[Math.floor(Math.random() * symbols.length)];
   return choice;
 };
@@ -740,7 +848,7 @@ const spinReels = async () => {
   if (hit) {
     const [icon, count] = hit;
     matchCount = count;
-    const symbolInfo = symbols.find((symbol) => symbol.icon === icon);
+    const symbolInfo = getCurrentSymbols().find((symbol) => symbol.icon === icon);
     if (symbolInfo) {
       if (count === 3 && symbolInfo.threeMult === "refund") {
         payoutValue = spinCost;
@@ -770,7 +878,7 @@ const spinReels = async () => {
     bonusEvents.push({ amount: bonus, label: "Lucky Dog", icon: "🐶" });
   }
 
-  if (matchCount === 3 && symbolsOnly.every((icon) => icon === "7️⃣") && passives.has("lucky-cat")) {
+  if (matchCount === 3 && symbolsOnly.every((icon) => icon === "💰") && passives.has("lucky-cat")) {
     balance += payoutValue;
     payoutValue *= 2;
     bonusTriggered = true;
@@ -1027,30 +1135,35 @@ rollCoinsButton.textContent = `Coin ziehen (${coinPrice} €)`;
 rerollCoinsButton.textContent = `Reroll (${coinPrice} €)`;
 updateCoinControls();
 applyLevelSettings();
+unlockLevel(2);
 gameShell.classList.add("hidden");
 levelButtons.forEach((button) => {
   button.addEventListener("click", () => {
     playClickSound();
-    const level = button.dataset.level;
-    if (level === "1") {
-      currentLevel = 1;
-      resetGameState({ keepPassives: false });
-      startScreen.classList.add("hidden");
-      gameShell.classList.remove("hidden");
+    const level = Number(button.dataset.level);
+    if (level === 3) {
+      showCenterMessage("Level 3 ist noch gesperrt.");
       return;
     }
-    if (level === "2" && level2Unlocked) {
-      currentLevel = 2;
-      resetGameState({ keepPassives: true });
-      startScreen.classList.add("hidden");
-      gameShell.classList.remove("hidden");
-      return;
+
+    currentLevel = level;
+    const restored = restoreLevelState(level);
+    if (!restored) {
+      resetGameState({ keepPassives: level === 2 });
     }
-    if (level !== "1") {
-      showCenterMessage("Bitte zuerst Level 1 abschließen.");
-      return;
-    }
+    startScreen.classList.add("hidden");
+    gameShell.classList.remove("hidden");
   });
+});
+
+
+homeButton.addEventListener("click", () => {
+  playClickSound();
+  saveCurrentLevelState();
+  startScreen.classList.remove("hidden");
+  gameShell.classList.add("hidden");
+  shopOverlay.classList.remove("show");
+  shopOverlay.setAttribute("aria-hidden", "true");
 });
 
 backToStartButton.addEventListener("click", () => {
