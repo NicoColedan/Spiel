@@ -163,6 +163,7 @@ const renderPayoutTable = () => {
   payoutList.appendChild(info);
 };
 
+
 const ensureAudio = () => {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -379,7 +380,13 @@ const configureMachineLayout = () => {
     for (let row = 0; row < layout.rows; row += 1) {
       const symbolEl = document.createElement("div");
       symbolEl.className = `symbol row-${row}`;
-      symbolEl.textContent = getRandomSymbol().icon;
+      const symbol = getRandomSymbol();
+      symbolEl.textContent = symbol.icon;
+      if (currentLevel === 2) {
+        symbolEl.dataset.symbol = symbol.icon;
+      } else {
+        delete symbolEl.dataset.symbol;
+      }
       reel.appendChild(symbolEl);
     }
     reelsContainer.appendChild(reel);
@@ -394,6 +401,10 @@ function applyLevelSettings() {
   });
   if (Number(stakeSelect.value) < minStake) {
     stakeSelect.value = String(minStake);
+  }
+  if (currentLevel !== 2) {
+    freeSpins = 0;
+    freeSpinQueued = false;
   }
   configureMachineLayout();
   spinCost = Number(stakeSelect.value);
@@ -626,8 +637,13 @@ const coinCatalog = [
     name: "Bonuscoin",
     type: "active",
     icon: "✨",
+    levels: [2],
     description: "Nächste 5 Spins sind kostenlos.",
     onUse: () => {
+      if (currentLevel !== 2) {
+        showToast("Bonuscoin nur in Level 2 verfügbar.");
+        return;
+      }
       if (freeSpins === 0) {
         freeSpinQueued = true;
       }
@@ -849,7 +865,8 @@ const rollCoins = (isReroll = false) => {
   coinResults.innerHTML = "";
   coinSpinner.classList.add("show");
   setTimeout(() => {
-    const picks = Array.from({ length: 3 }, () => coinCatalog[Math.floor(Math.random() * coinCatalog.length)]);
+    const availableCoins = coinCatalog.filter((coin) => (coin.levels ?? [1, 2]).includes(currentLevel));
+    const picks = Array.from({ length: 3 }, () => availableCoins[Math.floor(Math.random() * availableCoins.length)]);
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
     coinPurchased = false;
@@ -874,6 +891,11 @@ const applyColumnSymbols = (index, columnSymbols) => {
   symbolsInReel.forEach((el, rowIndex) => {
     const symbol = columnSymbols[rowIndex] ?? getRandomSymbol();
     el.textContent = symbol.icon;
+    if (currentLevel === 2) {
+      el.dataset.symbol = symbol.icon;
+    } else {
+      delete el.dataset.symbol;
+    }
   });
 };
 
@@ -1337,6 +1359,7 @@ levelButtons.forEach((button) => {
   });
 });
 
+
 homeButton.addEventListener("click", () => {
   playClickSound();
   stopSpinLoops();
@@ -1364,4 +1387,3 @@ freePlayButton.addEventListener("click", () => {
   levelCompleteOverlay.classList.remove("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "true");
 });
-``
