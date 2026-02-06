@@ -52,6 +52,7 @@ const levelSymbolSets = {
     { icon: "❌", twoMult: 0, threeMult: "refund" },
   ],
   2: [
+    { icon: "📖", isScatter: true },
     { icon: "10", threeMult: 3.5, fourMult: 7, fiveMult: 12 },
     { icon: "J", threeMult: 3.8, fourMult: 7.5, fiveMult: 13 },
     { icon: "Q", threeMult: 4.2, fourMult: 8.5, fiveMult: 14 },
@@ -95,6 +96,9 @@ let luckyPunchQueue = 0;
 let lastSpinWin = false;
 let freeSpinQueued = false;
 let hourglassCounter = 0;
+let freeSpinActive = false;
+let freeSpinTotalWin = 0;
+let scatterPending = false;
 let startTime = Date.now();
 let pendingCoin = null;
 let pendingAction = null;
@@ -117,7 +121,7 @@ let ambienceNodes = null;
 
 const levelSettings = {
   1: { minStake: 1, gameOverLimit: -1000, winTarget: 300 },
-  2: { minStake: 25, gameOverLimit: -200, winTarget: 750 },
+  2: { minStake: 25, gameOverLimit: -2000, winTarget: 750 },
 };
 
 const getLevelSettings = () => levelSettings[currentLevel] ?? levelSettings[1];
@@ -129,7 +133,7 @@ const getLevelLayout = () => levelLayouts[currentLevel] ?? levelLayouts[1];
 const renderPayoutTable = () => {
   if (!payoutList) return;
   payoutList.innerHTML = "";
-  const symbols = getCurrentSymbols();
+  const symbols = getCurrentSymbols().filter((symbol) => !symbol.isScatter);
   symbols.forEach((symbol) => {
     const row = document.createElement("li");
     if (currentLevel === 2) {
@@ -162,6 +166,7 @@ const renderPayoutTable = () => {
       : "Level 1: klassische Linie in der mittleren Reihe.";
   payoutList.appendChild(info);
 };
+
 
 const ensureAudio = () => {
   if (!audioContext) {
@@ -243,6 +248,12 @@ const playLeverSound = () => {
 const playSpinSound = () => {
   ensureAudio();
   playTone(currentLevel === 2 ? 170 : 260, 0.28, currentLevel === 2 ? "triangle" : "sine", 0.05);
+};
+
+const playMetalClickSound = () => {
+  ensureAudio();
+  playTone(720, 0.03, "square", 0.08);
+  setTimeout(() => playTone(540, 0.04, "square", 0.06), 40);
 };
 
 const playCoinActivateSound = () => {
@@ -347,6 +358,21 @@ const showPayout = (message, highlight = false) => {
   payout.style.color = highlight ? "#ffe680" : "#4dd7ff";
 };
 
+const triggerFreeSpins = (count, isRetrigger = false) => {
+  if (currentLevel !== 2) return;
+  const added = isRetrigger ? Math.min(count, 3) : count;
+  freeSpins = Math.min(25, freeSpins + added);
+  if (!isRetrigger) {
+    freeSpinActive = true;
+    freeSpinTotalWin = 0;
+    document.body.classList.add("free-spin-active");
+    showPayout("FREISPIELE", true);
+  } else {
+    showPayout(`+${added} Freispiele`, true);
+  }
+  updateFreeSpinIndicator();
+};
+
 const consumeActiveCoin = (coinId) => {
   const coinIndex = inventory.findIndex((coin) => coin?.id === coinId && coin.active);
   if (coinIndex !== -1) {
@@ -379,7 +405,13 @@ const configureMachineLayout = () => {
     for (let row = 0; row < layout.rows; row += 1) {
       const symbolEl = document.createElement("div");
       symbolEl.className = `symbol row-${row}`;
-      symbolEl.textContent = getRandomSymbol().icon;
+      const symbol = getRandomSymbol();
+      symbolEl.textContent = symbol.icon;
+      if (currentLevel === 2) {
+        symbolEl.dataset.symbol = symbol.icon;
+      } else {
+        delete symbolEl.dataset.symbol;
+      }
       reel.appendChild(symbolEl);
     }
     reelsContainer.appendChild(reel);
@@ -394,6 +426,14 @@ function applyLevelSettings() {
   });
   if (Number(stakeSelect.value) < minStake) {
     stakeSelect.value = String(minStake);
+  }
+  if (currentLevel !== 2) {
+    freeSpins = 0;
+    freeSpinQueued = false;
+    freeSpinActive = false;
+    freeSpinTotalWin = 0;
+    scatterPending = false;
+    document.body.classList.remove("free-spin-active");
   }
   configureMachineLayout();
   spinCost = Number(stakeSelect.value);
@@ -576,6 +616,17 @@ const showWin = (amount) => {
   winOverlay.classList.add("show");
 };
 
+const updateFreeSpinIndicator = () => {
+  const indicator = document.getElementById("free-spin-indicator");
+  if (!indicator) return;
+  if (freeSpinActive && currentLevel === 2) {
+    indicator.textContent = `${freeSpins} Freispiele verbleiben`;
+    indicator.classList.add("show");
+  } else {
+    indicator.classList.remove("show");
+  }
+};
+
 const updateStakeOptions = () => {
   configureMachineLayout();
   spinCost = Number(stakeSelect.value);
@@ -626,8 +677,13 @@ const coinCatalog = [
     name: "Bonuscoin",
     type: "active",
     icon: "✨",
+    levels: [2],
     description: "Nächste 5 Spins sind kostenlos.",
     onUse: () => {
+      if (currentLevel !== 2) {
+        showToast("Bonuscoin nur in Level 2 verfügbar.");
+        return;
+      }
       if (freeSpins === 0) {
         freeSpinQueued = true;
       }
@@ -849,9 +905,11 @@ const rollCoins = (isReroll = false) => {
   coinResults.innerHTML = "";
   coinSpinner.classList.add("show");
   setTimeout(() => {
-    const picks = Array.from({ length: 3 }, () => coinCatalog[Math.floor(Math.random() * coinCatalog.length)]);
+    const availableCoins = coinCatalog.filter((coin) => (coin.levels ?? [1, 2]).includes(currentLevel));
+    const picks = Array.from({ length: 3 }, () => availableCoins[Math.floor(Math.random() * availableCoins.length)]);
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
+    playMetalClickSound();
     coinPurchased = false;
     coinRolled = true;
     rerollCoinsButton.textContent = `Reroll (${currentRollPrice} €)`;
@@ -874,6 +932,11 @@ const applyColumnSymbols = (index, columnSymbols) => {
   symbolsInReel.forEach((el, rowIndex) => {
     const symbol = columnSymbols[rowIndex] ?? getRandomSymbol();
     el.textContent = symbol.icon;
+    if (currentLevel === 2) {
+      el.dataset.symbol = symbol.icon;
+    } else {
+      delete el.dataset.symbol;
+    }
   });
 };
 
@@ -905,6 +968,7 @@ const stopReelSpin = (index, finalColumn) => {
 
 const getSymbolMultiplier = (symbol, count) => {
   if (count <= 0) return 0;
+  if (symbol.isScatter) return 0;
   if (count === 2) return symbol.twoMult ?? 0;
   if (count === 3) return symbol.threeMult ?? 0;
   if (count === 4) return symbol.fourMult ?? symbol.threeMult ?? 0;
@@ -990,6 +1054,7 @@ const spinReels = async () => {
 
   setLostState(false);
   isSpinning = true;
+  updateFreeSpinIndicator();
   if (freeSpins > 0 || freeSpinQueued) {
     if (freeSpinQueued) {
       freeSpinQueued = false;
@@ -1006,7 +1071,16 @@ const spinReels = async () => {
   const results = Array.from({ length: layout.reels }, () =>
     Array.from({ length: layout.rows }, () => getRandomSymbol())
   );
-  const stopDelays = Array.from({ length: layout.reels }, (_, index) => 500 + index * 260);
+  const slowFactor = freeSpinActive ? 1.35 : 1;
+  const scatterIcon = getCurrentSymbols().find((symbol) => symbol.isScatter)?.icon;
+  const stopDelays = Array.from({ length: layout.reels }, (_, index) => {
+    const baseDelay = (500 + index * 260) * slowFactor;
+    if (!scatterIcon) return baseDelay;
+    const priorScatters = results
+      .slice(0, index)
+      .reduce((sum, column) => sum + column.filter((symbol) => symbol.icon === scatterIcon).length, 0);
+    return priorScatters >= 2 ? baseDelay * 1.35 : baseDelay;
+  });
   playRattleSound(stopDelays[stopDelays.length - 1]);
 
   reels.forEach((_, index) => startReelSpin(index));
@@ -1025,6 +1099,9 @@ const spinReels = async () => {
 
   currentGrid = results.map((column) => column.map((symbol) => symbol.icon));
   const wins = evaluatePaylines(currentGrid);
+  const scatterCount = scatterIcon
+    ? currentGrid.reduce((sum, column) => sum + column.filter((icon) => icon === scatterIcon).length, 0)
+    : 0;
   let payoutValue = wins.reduce((sum, win) => sum + win.amount, 0);
   let message = wins.length ? `${wins.length} Gewinnlinie(n)! +${payoutValue}` : "Leider kein Gewinn.";
   let bonusTriggered = false;
@@ -1032,6 +1109,13 @@ const spinReels = async () => {
 
   if (wins.length) {
     balance += payoutValue;
+  }
+
+  if (currentLevel === 2 && scatterCount >= 3) {
+    const baseSpins = scatterCount === 3 ? 8 : scatterCount === 4 ? 11 : 13;
+    const retrigger = freeSpinActive;
+    triggerFreeSpins(baseSpins, retrigger);
+    scatterPending = true;
   }
 
   if (wins.some((win) => win.count >= 3) && passives.has("lucky-dog")) {
@@ -1093,6 +1177,9 @@ const spinReels = async () => {
   if (payoutValue > 0) {
     playWinSound();
   }
+  if (freeSpinActive && payoutValue > 0) {
+    freeSpinTotalWin += payoutValue;
+  }
 
   if (wins.length) {
     await playPaylineAnimation(wins);
@@ -1114,6 +1201,17 @@ const spinReels = async () => {
   renderInventory();
 
   isSpinning = false;
+  updateFreeSpinIndicator();
+
+  if (freeSpinActive && freeSpins === 0 && scatterPending) {
+    scatterPending = false;
+  }
+  if (freeSpinActive && freeSpins === 0 && !isSpinning) {
+    freeSpinActive = false;
+    document.body.classList.remove("free-spin-active");
+    showPayout(`Freispiele beendet: +${freeSpinTotalWin} €`, true);
+    updateFreeSpinIndicator();
+  }
 
   if (autoSpin) {
     spinInterval = setTimeout(spinReels, 700);
@@ -1337,6 +1435,7 @@ levelButtons.forEach((button) => {
   });
 });
 
+
 homeButton.addEventListener("click", () => {
   playClickSound();
   stopSpinLoops();
@@ -1364,4 +1463,3 @@ freePlayButton.addEventListener("click", () => {
   levelCompleteOverlay.classList.remove("show");
   levelCompleteOverlay.setAttribute("aria-hidden", "true");
 });
-``
