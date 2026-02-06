@@ -329,6 +329,7 @@ header p {
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   flex-direction: column;
   gap: 12px;
 }
