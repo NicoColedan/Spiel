@@ -52,6 +52,7 @@ const levelSymbolSets = {
     { icon: "❌", twoMult: 0, threeMult: "refund" },
   ],
   2: [
+    { icon: "📜", isScatter: true },
     { icon: "10", threeMult: 3.5, fourMult: 7, fiveMult: 12 },
     { icon: "J", threeMult: 3.8, fourMult: 7.5, fiveMult: 13 },
     { icon: "Q", threeMult: 4.2, fourMult: 8.5, fiveMult: 14 },
@@ -95,6 +96,9 @@ let luckyPunchQueue = 0;
 let lastSpinWin = false;
 let freeSpinQueued = false;
 let hourglassCounter = 0;
+let freeSpinActive = false;
+let freeSpinTotalWin = 0;
+let scatterPending = false;
 let startTime = Date.now();
 let pendingCoin = null;
 let pendingAction = null;
@@ -129,7 +133,7 @@ const getLevelLayout = () => levelLayouts[currentLevel] ?? levelLayouts[1];
 const renderPayoutTable = () => {
   if (!payoutList) return;
   payoutList.innerHTML = "";
-  const symbols = getCurrentSymbols();
+  const symbols = getCurrentSymbols().filter((symbol) => !symbol.isScatter);
   symbols.forEach((symbol) => {
     const row = document.createElement("li");
     if (currentLevel === 2) {
@@ -246,6 +250,12 @@ const playSpinSound = () => {
   playTone(currentLevel === 2 ? 170 : 260, 0.28, currentLevel === 2 ? "triangle" : "sine", 0.05);
 };
 
+const playMetalClickSound = () => {
+  ensureAudio();
+  playTone(720, 0.03, "square", 0.08);
+  setTimeout(() => playTone(540, 0.04, "square", 0.06), 40);
+};
+
 const playCoinActivateSound = () => {
   ensureAudio();
   playTone(640, 0.07, "triangle", 0.1);
@@ -348,6 +358,21 @@ const showPayout = (message, highlight = false) => {
   payout.style.color = highlight ? "#ffe680" : "#4dd7ff";
 };
 
+const triggerFreeSpins = (count, isRetrigger = false) => {
+  if (currentLevel !== 2) return;
+  const added = isRetrigger ? Math.min(count, 3) : count;
+  freeSpins = Math.min(25, freeSpins + added);
+  if (!isRetrigger) {
+    freeSpinActive = true;
+    freeSpinTotalWin = 0;
+    document.body.classList.add("free-spin-active");
+    showPayout("FREISPIELE", true);
+  } else {
+    showPayout(`+${added} Freispiele`, true);
+  }
+  updateFreeSpinIndicator();
+};
+
 const consumeActiveCoin = (coinId) => {
   const coinIndex = inventory.findIndex((coin) => coin?.id === coinId && coin.active);
   if (coinIndex !== -1) {
@@ -405,6 +430,10 @@ function applyLevelSettings() {
   if (currentLevel !== 2) {
     freeSpins = 0;
     freeSpinQueued = false;
+    freeSpinActive = false;
+    freeSpinTotalWin = 0;
+    scatterPending = false;
+    document.body.classList.remove("free-spin-active");
   }
   configureMachineLayout();
   spinCost = Number(stakeSelect.value);
@@ -585,6 +614,17 @@ const showWin = (amount) => {
   winOverlay.classList.remove("show");
   void winOverlay.offsetWidth;
   winOverlay.classList.add("show");
+};
+
+const updateFreeSpinIndicator = () => {
+  const indicator = document.getElementById("free-spin-indicator");
+  if (!indicator) return;
+  if (freeSpinActive && currentLevel === 2) {
+    indicator.textContent = `${freeSpins} Freispiele verbleiben`;
+    indicator.classList.add("show");
+  } else {
+    indicator.classList.remove("show");
+  }
 };
 
 const updateStakeOptions = () => {
@@ -869,6 +909,7 @@ const rollCoins = (isReroll = false) => {
     const picks = Array.from({ length: 3 }, () => availableCoins[Math.floor(Math.random() * availableCoins.length)]);
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
+    playMetalClickSound();
     coinPurchased = false;
     coinRolled = true;
     rerollCoinsButton.textContent = `Reroll (${currentRollPrice} €)`;
@@ -927,6 +968,7 @@ const stopReelSpin = (index, finalColumn) => {
 
 const getSymbolMultiplier = (symbol, count) => {
   if (count <= 0) return 0;
+  if (symbol.isScatter) return 0;
   if (count === 2) return symbol.twoMult ?? 0;
   if (count === 3) return symbol.threeMult ?? 0;
   if (count === 4) return symbol.fourMult ?? symbol.threeMult ?? 0;
@@ -1012,6 +1054,7 @@ const spinReels = async () => {
 
   setLostState(false);
   isSpinning = true;
+  updateFreeSpinIndicator();
   if (freeSpins > 0 || freeSpinQueued) {
     if (freeSpinQueued) {
       freeSpinQueued = false;
@@ -1028,7 +1071,8 @@ const spinReels = async () => {
   const results = Array.from({ length: layout.reels }, () =>
     Array.from({ length: layout.rows }, () => getRandomSymbol())
   );
-  const stopDelays = Array.from({ length: layout.reels }, (_, index) => 500 + index * 260);
+  const slowFactor = freeSpinActive ? 1.35 : 1;
+  const stopDelays = Array.from({ length: layout.reels }, (_, index) => (500 + index * 260) * slowFactor);
   playRattleSound(stopDelays[stopDelays.length - 1]);
 
   reels.forEach((_, index) => startReelSpin(index));
@@ -1047,6 +1091,10 @@ const spinReels = async () => {
 
   currentGrid = results.map((column) => column.map((symbol) => symbol.icon));
   const wins = evaluatePaylines(currentGrid);
+  const scatterIcon = getCurrentSymbols().find((symbol) => symbol.isScatter)?.icon;
+  const scatterCount = scatterIcon
+    ? currentGrid.reduce((sum, column) => sum + column.filter((icon) => icon === scatterIcon).length, 0)
+    : 0;
   let payoutValue = wins.reduce((sum, win) => sum + win.amount, 0);
   let message = wins.length ? `${wins.length} Gewinnlinie(n)! +${payoutValue}` : "Leider kein Gewinn.";
   let bonusTriggered = false;
@@ -1054,6 +1102,13 @@ const spinReels = async () => {
 
   if (wins.length) {
     balance += payoutValue;
+  }
+
+  if (currentLevel === 2 && scatterCount >= 3) {
+    const baseSpins = scatterCount === 3 ? 8 : scatterCount === 4 ? 11 : 13;
+    const retrigger = freeSpinActive;
+    triggerFreeSpins(baseSpins, retrigger);
+    scatterPending = true;
   }
 
   if (wins.some((win) => win.count >= 3) && passives.has("lucky-dog")) {
@@ -1115,6 +1170,9 @@ const spinReels = async () => {
   if (payoutValue > 0) {
     playWinSound();
   }
+  if (freeSpinActive && payoutValue > 0) {
+    freeSpinTotalWin += payoutValue;
+  }
 
   if (wins.length) {
     await playPaylineAnimation(wins);
@@ -1136,6 +1194,17 @@ const spinReels = async () => {
   renderInventory();
 
   isSpinning = false;
+  updateFreeSpinIndicator();
+
+  if (freeSpinActive && freeSpins === 0 && scatterPending) {
+    scatterPending = false;
+  }
+  if (freeSpinActive && freeSpins === 0 && !isSpinning) {
+    freeSpinActive = false;
+    document.body.classList.remove("free-spin-active");
+    showPayout(`Freispiele beendet: +${freeSpinTotalWin} €`, true);
+    updateFreeSpinIndicator();
+  }
 
   if (autoSpin) {
     spinInterval = setTimeout(spinReels, 700);
