@@ -6,7 +6,7 @@
   --accent-2: #4dd7ff;
   --glow: rgba(255, 77, 148, 0.45);
   --text: #f2f3f7;
-  --coin-size: 52px;
+  --coin-size: 50px;
 }
 
 * {
@@ -214,6 +214,27 @@ body.level-2::after {
   opacity: 1;
 }
 
+.center-message.free-spin-celebration {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  color: #ffe08a;
+  text-shadow: 0 0 30px rgba(255, 214, 120, 0.9);
+  animation: freeSpinBurst 2.2s ease-out;
+}
+
+@keyframes freeSpinBurst {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
 .level-complete {
   position: fixed;
   inset: 0;
@@ -920,14 +941,14 @@ body.level-2 .inventory {
 }
 
 .inventory-slot .coin {
-  width: 50px;
-  height: 50px;
+  width: var(--coin-size);
+  height: var(--coin-size);
   font-size: 1.25rem;
 }
 
 .inventory-slot.small .coin {
-  width: 50px;
-  height: 50px;
+  width: var(--coin-size);
+  height: var(--coin-size);
   font-size: 1.25rem;
 }
 
@@ -1069,7 +1090,7 @@ body.level-2 .inventory {
   width: calc(var(--coin-size) * 3 + 24px);
   max-width: 100%;
   opacity: 0;
-  transform: scale(0.9);
+  transform: scale(1);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
@@ -1085,7 +1106,7 @@ body.level-2 .inventory {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  font-size: 2rem;
+  font-size: 1.4rem;
   text-align: center;
   border-radius: 50%;
   background: radial-gradient(circle at top, #fff7cf, #f7c34d 50%, #b17b24 90%);
@@ -1124,6 +1145,78 @@ body.level-2 .inventory {
   align-items: center;
   cursor: pointer;
   position: relative;
+  overflow: hidden;
+}
+
+.coin-card[data-rarity="common"] {
+  background: rgba(30, 90, 50, 0.35);
+  border-color: rgba(90, 220, 130, 0.4);
+}
+
+.coin-card[data-rarity="uncommon"] {
+  background: rgba(30, 55, 100, 0.35);
+  border-color: rgba(100, 160, 255, 0.4);
+}
+
+.coin-card[data-rarity="rare"] {
+  background: rgba(70, 35, 105, 0.38);
+  border-color: rgba(180, 120, 255, 0.45);
+}
+
+.coin-card[data-rarity="epic"] {
+  background: rgba(110, 60, 20, 0.4);
+  border-color: rgba(255, 170, 80, 0.45);
+}
+
+.coin-card[data-rarity="legendary"] {
+  background: rgba(110, 25, 25, 0.45);
+  border-color: rgba(255, 120, 120, 0.5);
+}
+
+.coin-card[data-rarity="mythic"] {
+  background: rgba(10, 10, 10, 0.65);
+  border-color: rgba(220, 220, 220, 0.35);
+}
+
+.rarity-dot {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6bff9c;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.coin-card[data-rarity="common"] .rarity-dot {
+  background: #6bff9c;
+  color: #6bff9c;
+}
+
+.coin-card[data-rarity="uncommon"] .rarity-dot {
+  background: #6bb0ff;
+  color: #6bb0ff;
+}
+
+.coin-card[data-rarity="rare"] .rarity-dot {
+  background: #b28bff;
+  color: #b28bff;
+}
+
+.coin-card[data-rarity="epic"] .rarity-dot {
+  background: #ffb65a;
+  color: #ffb65a;
+}
+
+.coin-card[data-rarity="legendary"] .rarity-dot {
+  background: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.coin-card[data-rarity="mythic"] .rarity-dot {
+  background: #d8d8d8;
+  color: #d8d8d8;
 }
 
 .coin-card h4 {

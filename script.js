@@ -52,7 +52,7 @@ const levelSymbolSets = {
     { icon: "❌", twoMult: 0, threeMult: "refund" },
   ],
   2: [
-    { icon: "📖", isScatter: true },
+    { icon: "📕", isScatter: true },
     { icon: "10", threeMult: 3.5, fourMult: 7, fiveMult: 12 },
     { icon: "J", threeMult: 3.8, fourMult: 7.5, fiveMult: 13 },
     { icon: "Q", threeMult: 4.2, fourMult: 8.5, fiveMult: 14 },
@@ -99,6 +99,49 @@ let hourglassCounter = 0;
 let freeSpinActive = false;
 let freeSpinTotalWin = 0;
 let scatterPending = false;
+let refundOnLossTurns = 0;
+let stakeModifierTurns = 0;
+let stakeModifier = 0;
+let winModifierTurns = 0;
+let winModifier = 0;
+let diagonalBonus = 0;
+let doubleTwoCountsTurns = 0;
+let slowSpinTurns = 0;
+let splitRealityActive = false;
+let lossBoostActive = false;
+let lossBoostStacks = 0;
+let neonFlowActive = false;
+let neonFlowBonus = 0;
+let warpedLuckActive = false;
+let neonArchiveActive = false;
+let neonArchiveReady = false;
+let reactionChipActive = false;
+let stopTriggered = false;
+let spinCounter = 0;
+let lossStreak = 0;
+let heatChipReady = false;
+let goldDustActive = false;
+let freeSpinWinModifier = 0;
+let freeSpinNoWin = false;
+let freeSpinGuaranteeTurns = 0;
+let freeSpinHeatBonus = 0;
+let postFreeSpinBoostTurns = 0;
+let postFreeSpinBoost = 0.6;
+let freeSpinNormalTurns = 0;
+let pendingStoredWin = false;
+let storedWinAmount = 0;
+let storedWinDelay = 0;
+let lastWinAmount = 0;
+let safetyNetActive = false;
+let safetyNetUsed = false;
+let secondChanceArmed = false;
+let heatChipActive = false;
+let abyssCoreActive = false;
+let desertPactActive = false;
+let goldenHeatActive = false;
+let heartMachineActive = false;
+let emptyCoinActive = false;
+const symbolWeightBoosts = new Map();
 let startTime = Date.now();
 let pendingCoin = null;
 let pendingAction = null;
@@ -129,6 +172,11 @@ const getLevelSettings = () => levelSettings[currentLevel] ?? levelSettings[1];
 const getSymbolsForLevel = (level) => levelSymbolSets[level] ?? levelSymbolSets[1];
 const getCurrentSymbols = () => getSymbolsForLevel(currentLevel);
 const getLevelLayout = () => levelLayouts[currentLevel] ?? levelLayouts[1];
+
+const addSymbolBoost = (icon, value) => {
+  const current = symbolWeightBoosts.get(icon) ?? 0;
+  symbolWeightBoosts.set(icon, current + value);
+};
 
 const renderPayoutTable = () => {
   if (!payoutList) return;
@@ -288,6 +336,13 @@ const playWinSound = () => {
   setTimeout(() => playTone(currentLevel === 2 ? 610 : 720, 0.12, "sine", 0.12), 120);
 };
 
+const playFreeSpinSound = () => {
+  ensureAudio();
+  playTone(190, 0.22, "triangle", 0.12);
+  setTimeout(() => playTone(260, 0.25, "sine", 0.14), 180);
+  setTimeout(() => playTone(360, 0.3, "sine", 0.12), 420);
+};
+
 const playLevelCompleteSound = () => {
   ensureAudio();
   playTone(440, 0.14, "sine", 0.12);
@@ -306,7 +361,23 @@ const updateBalance = () => {
   const formatted = balance > 0 ? `+${balance}` : `${balance}`;
   balanceLabel.textContent = `${formatted} €`;
   const { gameOverLimit, winTarget } = getLevelSettings();
+  if (safetyNetActive && !safetyNetUsed && balance < -50) {
+    balance = -50;
+    safetyNetUsed = true;
+    balanceLabel.textContent = `-50 €`;
+    showToast("Sicherheitsmarke schützt dein Guthaben.");
+  }
   if (!gameOver && balance <= gameOverLimit) {
+    if (secondChanceArmed) {
+      secondChanceArmed = false;
+      consumeActiveCoin("zweite-chance");
+      gameOver = false;
+      balance = Math.max(balance, gameOverLimit + 1);
+      freeSpinQueued = true;
+      freeSpins += 1;
+      showToast("Zweite Chance: Gratis-Spin!");
+      return;
+    }
     gameOver = true;
     autoSpin = false;
     clearTimeout(spinInterval);
@@ -367,6 +438,14 @@ const triggerFreeSpins = (count, isRetrigger = false) => {
     freeSpinTotalWin = 0;
     document.body.classList.add("free-spin-active");
     showPayout("FREISPIELE", true);
+    showFreeSpinCelebration();
+    playFreeSpinSound();
+    if (goldenHeatActive) {
+      freeSpinHeatBonus = 1;
+    }
+    if (emptyCoinActive) {
+      freeSpinNoWin = true;
+    }
   } else {
     showPayout(`+${added} Freispiele`, true);
   }
@@ -384,6 +463,13 @@ const showCenterMessage = (message) => {
   centerMessage.textContent = message;
   centerMessage.classList.add("show");
   setTimeout(() => centerMessage.classList.remove("show"), 1600);
+};
+
+const showFreeSpinCelebration = () => {
+  if (!centerMessage) return;
+  centerMessage.textContent = "FREISPIELE GEWONNEN!";
+  centerMessage.classList.add("show", "free-spin-celebration");
+  setTimeout(() => centerMessage.classList.remove("show", "free-spin-celebration"), 2200);
 };
 
 const updateLevelIndicator = () => {
@@ -433,6 +519,11 @@ function applyLevelSettings() {
     freeSpinActive = false;
     freeSpinTotalWin = 0;
     scatterPending = false;
+    freeSpinWinModifier = 0;
+    freeSpinNoWin = false;
+    freeSpinGuaranteeTurns = 0;
+    freeSpinHeatBonus = 0;
+    freeSpinNormalTurns = 0;
     document.body.classList.remove("free-spin-active");
   }
   configureMachineLayout();
@@ -499,6 +590,9 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   balance = -50;
   freeSpins = 0;
   freeSpinQueued = false;
+  freeSpinActive = false;
+  freeSpinTotalWin = 0;
+  scatterPending = false;
   winBonusMultiplier = 0;
   winBonusTurns = 0;
   doubleWinNext = false;
@@ -507,6 +601,48 @@ const resetGameState = ({ keepPassives } = { keepPassives: false }) => {
   luckyPunchQueue = 0;
   lastSpinWin = false;
   hourglassCounter = 0;
+  refundOnLossTurns = 0;
+  stakeModifierTurns = 0;
+  stakeModifier = 0;
+  winModifierTurns = 0;
+  winModifier = 0;
+  diagonalBonus = 0;
+  doubleTwoCountsTurns = 0;
+  slowSpinTurns = 0;
+  splitRealityActive = false;
+  lossBoostActive = false;
+  lossBoostStacks = 0;
+  neonFlowActive = false;
+  neonFlowBonus = 0;
+  warpedLuckActive = false;
+  neonArchiveActive = false;
+  neonArchiveReady = false;
+  reactionChipActive = false;
+  stopTriggered = false;
+  spinCounter = 0;
+  lossStreak = 0;
+  heatChipReady = false;
+  goldDustActive = false;
+  freeSpinWinModifier = 0;
+  freeSpinNoWin = false;
+  freeSpinGuaranteeTurns = 0;
+  freeSpinHeatBonus = 0;
+  postFreeSpinBoostTurns = 0;
+  freeSpinNormalTurns = 0;
+  pendingStoredWin = false;
+  storedWinAmount = 0;
+  storedWinDelay = 0;
+  lastWinAmount = 0;
+  safetyNetActive = false;
+  safetyNetUsed = false;
+  secondChanceArmed = false;
+  heatChipActive = false;
+  abyssCoreActive = false;
+  desertPactActive = false;
+  goldenHeatActive = false;
+  heartMachineActive = false;
+  emptyCoinActive = false;
+  symbolWeightBoosts.clear();
   startTime = Date.now();
   inventory.fill(null);
   if (!keepPassives) {
@@ -538,6 +674,9 @@ const saveCurrentLevelState = () => {
     balance,
     freeSpins,
     freeSpinQueued,
+    freeSpinActive,
+    freeSpinTotalWin,
+    scatterPending,
     winBonusMultiplier,
     winBonusTurns,
     doubleWinNext,
@@ -551,6 +690,48 @@ const saveCurrentLevelState = () => {
     currentRollPrice,
     coinPurchased,
     coinRolled,
+    refundOnLossTurns,
+    stakeModifierTurns,
+    stakeModifier,
+    winModifierTurns,
+    winModifier,
+    diagonalBonus,
+    doubleTwoCountsTurns,
+    slowSpinTurns,
+    splitRealityActive,
+    lossBoostActive,
+    lossBoostStacks,
+    neonFlowActive,
+    neonFlowBonus,
+    warpedLuckActive,
+    neonArchiveActive,
+    neonArchiveReady,
+    reactionChipActive,
+    spinCounter,
+    lossStreak,
+    heatChipReady,
+    goldDustActive,
+    freeSpinWinModifier,
+    freeSpinNoWin,
+    freeSpinGuaranteeTurns,
+    freeSpinHeatBonus,
+    postFreeSpinBoostTurns,
+    postFreeSpinBoost,
+    freeSpinNormalTurns,
+    pendingStoredWin,
+    storedWinAmount,
+    storedWinDelay,
+    lastWinAmount,
+    safetyNetActive,
+    safetyNetUsed,
+    secondChanceArmed,
+    heatChipActive,
+    abyssCoreActive,
+    desertPactActive,
+    goldenHeatActive,
+    heartMachineActive,
+    emptyCoinActive,
+    symbolWeightBoosts: Array.from(symbolWeightBoosts.entries()),
     gameOver,
     gameOverSoundPlayed,
     levelCompleted,
@@ -569,6 +750,9 @@ const restoreLevelState = (level) => {
   balance = state.balance;
   freeSpins = state.freeSpins;
   freeSpinQueued = state.freeSpinQueued;
+  freeSpinActive = state.freeSpinActive ?? false;
+  freeSpinTotalWin = state.freeSpinTotalWin ?? 0;
+  scatterPending = state.scatterPending ?? false;
   winBonusMultiplier = state.winBonusMultiplier;
   winBonusTurns = state.winBonusTurns;
   doubleWinNext = state.doubleWinNext;
@@ -582,6 +766,51 @@ const restoreLevelState = (level) => {
   currentRollPrice = state.currentRollPrice;
   coinPurchased = state.coinPurchased;
   coinRolled = state.coinRolled;
+  refundOnLossTurns = state.refundOnLossTurns ?? 0;
+  stakeModifierTurns = state.stakeModifierTurns ?? 0;
+  stakeModifier = state.stakeModifier ?? 0;
+  winModifierTurns = state.winModifierTurns ?? 0;
+  winModifier = state.winModifier ?? 0;
+  diagonalBonus = state.diagonalBonus ?? 0;
+  doubleTwoCountsTurns = state.doubleTwoCountsTurns ?? 0;
+  slowSpinTurns = state.slowSpinTurns ?? 0;
+  splitRealityActive = state.splitRealityActive ?? false;
+  lossBoostActive = state.lossBoostActive ?? false;
+  lossBoostStacks = state.lossBoostStacks ?? 0;
+  neonFlowActive = state.neonFlowActive ?? false;
+  neonFlowBonus = state.neonFlowBonus ?? 0;
+  warpedLuckActive = state.warpedLuckActive ?? false;
+  neonArchiveActive = state.neonArchiveActive ?? false;
+  neonArchiveReady = state.neonArchiveReady ?? false;
+  reactionChipActive = state.reactionChipActive ?? false;
+  spinCounter = state.spinCounter ?? 0;
+  lossStreak = state.lossStreak ?? 0;
+  heatChipReady = state.heatChipReady ?? false;
+  goldDustActive = state.goldDustActive ?? false;
+  freeSpinWinModifier = state.freeSpinWinModifier ?? 0;
+  freeSpinNoWin = state.freeSpinNoWin ?? false;
+  freeSpinGuaranteeTurns = state.freeSpinGuaranteeTurns ?? 0;
+  freeSpinHeatBonus = state.freeSpinHeatBonus ?? 0;
+  postFreeSpinBoostTurns = state.postFreeSpinBoostTurns ?? 0;
+  postFreeSpinBoost = state.postFreeSpinBoost ?? postFreeSpinBoost;
+  freeSpinNormalTurns = state.freeSpinNormalTurns ?? 0;
+  pendingStoredWin = state.pendingStoredWin ?? false;
+  storedWinAmount = state.storedWinAmount ?? 0;
+  storedWinDelay = state.storedWinDelay ?? 0;
+  lastWinAmount = state.lastWinAmount ?? 0;
+  safetyNetActive = state.safetyNetActive ?? false;
+  safetyNetUsed = state.safetyNetUsed ?? false;
+  secondChanceArmed = state.secondChanceArmed ?? false;
+  heatChipActive = state.heatChipActive ?? false;
+  abyssCoreActive = state.abyssCoreActive ?? false;
+  desertPactActive = state.desertPactActive ?? false;
+  goldenHeatActive = state.goldenHeatActive ?? false;
+  heartMachineActive = state.heartMachineActive ?? false;
+  emptyCoinActive = state.emptyCoinActive ?? false;
+  symbolWeightBoosts.clear();
+  if (state.symbolWeightBoosts) {
+    state.symbolWeightBoosts.forEach(([icon, value]) => symbolWeightBoosts.set(icon, value));
+  }
   gameOver = state.gameOver;
   gameOverSoundPlayed = state.gameOverSoundPlayed;
   levelCompleted = state.levelCompleted;
@@ -671,14 +900,436 @@ const updateTimer = () => {
   }
 };
 
+const rarityWeights = {
+  common: 55,
+  uncommon: 30,
+  rare: 15,
+  epic: 8,
+  legendary: 4,
+  mythic: 1,
+};
+
 const coinCatalog = [
+  {
+    id: "kupferglueck",
+    name: "Kupferglück",
+    type: "active",
+    rarity: "common",
+    icon: "🟤",
+    levels: [1, 2],
+    description: "+5 % Gewinn auf den nächsten Spin.",
+    duration: 1,
+    onUse: () => {
+      winBonusMultiplier += 0.05;
+      winBonusTurns = Math.max(winBonusTurns, 1);
+      showToast("Kupferglück aktiv.");
+    },
+  },
+  {
+    id: "blinkender-jeton",
+    name: "Blinkender Jeton",
+    type: "active",
+    rarity: "common",
+    icon: "🔆",
+    levels: [1],
+    description: "Verlust im nächsten Spin → Einsatz zurück.",
+    duration: 1,
+    onUse: () => {
+      refundOnLossTurns = Math.max(refundOnLossTurns, 1);
+      showToast("Blinkender Jeton bereit.");
+    },
+  },
+  {
+    id: "staubiger-pfennig",
+    name: "Staubiger Pfennig",
+    type: "active",
+    rarity: "common",
+    icon: "🟫",
+    levels: [2],
+    description: "3 Spins: Einsatz −10 %, Gewinn −10 %.",
+    duration: 3,
+    onUse: () => {
+      stakeModifier = -0.1;
+      stakeModifierTurns = Math.max(stakeModifierTurns, 3);
+      winModifier = -0.1;
+      winModifierTurns = Math.max(winModifierTurns, 3);
+      showToast("Staubiger Pfennig aktiv.");
+    },
+  },
+  {
+    id: "neon-splitter",
+    name: "Neon-Splitter",
+    type: "passive",
+    rarity: "common",
+    icon: "✨",
+    levels: [1],
+    description: "+1 % Gewinnchance auf ⭐ und 🍒.",
+    onGain: () => {
+      addSymbolBoost("⭐", 0.08);
+      addSymbolBoost("🍒", 0.08);
+    },
+  },
+  {
+    id: "abnutzungscoin",
+    name: "Abnutzungscoin",
+    type: "active",
+    rarity: "common",
+    icon: "🧱",
+    levels: [1, 2],
+    description: "Freispiele geben −20 % Gewinn.",
+    duration: 1,
+    onUse: () => {
+      freeSpinWinModifier -= 0.2;
+      showToast("Abnutzungscoin aktiv.");
+    },
+  },
+  {
+    id: "hitzechip",
+    name: "Hitzechip",
+    type: "passive",
+    rarity: "common",
+    icon: "🔥",
+    levels: [2],
+    description: "Nach 10 Verlusten +5 % Gewinn.",
+    onGain: () => {
+      heatChipActive = true;
+    },
+  },
+  {
+    id: "restwert",
+    name: "Restwert",
+    type: "active",
+    rarity: "common",
+    icon: "🪙",
+    levels: [1, 2],
+    description: "Wenn Guthaben < 0 → +15 €.",
+    duration: 1,
+    onUse: () => {
+      if (balance < 0) {
+        balance += 15;
+        updateBalance();
+        showToast("Restwert +15 €");
+      } else {
+        showToast("Restwert: Guthaben ist nicht negativ.");
+      }
+    },
+  },
+  {
+    id: "sicherheitsmarke",
+    name: "Sicherheitsmarke",
+    type: "passive",
+    rarity: "common",
+    icon: "🛡️",
+    levels: [1, 2],
+    description: "Guthaben kann einmal nicht unter −50 fallen.",
+    onGain: () => {
+      safetyNetActive = true;
+    },
+  },
+  {
+    id: "doppelrand",
+    name: "Doppelrand",
+    type: "active",
+    rarity: "uncommon",
+    icon: "🪙",
+    levels: [1],
+    description: "Zwei gleiche Symbole zahlen wie drei.",
+    duration: 1,
+    onUse: () => {
+      doubleTwoCountsTurns = Math.max(doubleTwoCountsTurns, 1);
+      showToast("Doppelrand aktiv.");
+    },
+  },
+  {
+    id: "sandlauf",
+    name: "Sandlauf",
+    type: "active",
+    rarity: "uncommon",
+    icon: "🏜️",
+    levels: [2],
+    description: "5 Spins langsamer → +10 % Gewinn.",
+    duration: 5,
+    onUse: () => {
+      slowSpinTurns = Math.max(slowSpinTurns, 5);
+      winModifier = 0.1;
+      winModifierTurns = Math.max(winModifierTurns, 5);
+      showToast("Sandlauf aktiv.");
+    },
+  },
+  {
+    id: "schraegchance",
+    name: "Schrägchance",
+    type: "passive",
+    rarity: "uncommon",
+    icon: "📐",
+    levels: [2],
+    description: "Diagonale Linien +3 % Gewinn.",
+    onGain: () => {
+      diagonalBonus = 0.03;
+    },
+  },
+  {
+    id: "spannungsaufbau",
+    name: "Spannungsaufbau",
+    type: "active",
+    rarity: "uncommon",
+    icon: "📈",
+    levels: [1, 2],
+    description: "Jeder Verlust +4 % Gewinn (max 20 %).",
+    duration: 5,
+    onUse: () => {
+      lossBoostActive = true;
+      lossBoostStacks = 0;
+      showToast("Spannungsaufbau aktiv.");
+    },
+  },
+  {
+    id: "neonfokus",
+    name: "Neonfokus",
+    type: "passive",
+    rarity: "uncommon",
+    icon: "⭐",
+    levels: [1],
+    description: "⭐ erscheint minimal häufiger.",
+    onGain: () => {
+      addSymbolBoost("⭐", 0.12);
+    },
+  },
+  {
+    id: "risikosteuer",
+    name: "Risikosteuer",
+    type: "active",
+    rarity: "uncommon",
+    icon: "⚖️",
+    levels: [1, 2],
+    description: "3 Spins: Einsatz +25 %, Gewinn +40 %.",
+    duration: 3,
+    onUse: () => {
+      stakeModifier = 0.25;
+      stakeModifierTurns = Math.max(stakeModifierTurns, 3);
+      winModifier = 0.4;
+      winModifierTurns = Math.max(winModifierTurns, 3);
+      showToast("Risikosteuer aktiv.");
+    },
+  },
+  {
+    id: "zweite-chance",
+    name: "Zweite Chance",
+    type: "active",
+    rarity: "uncommon",
+    icon: "🪽",
+    levels: [1, 2],
+    description: "Nach Totalverlust → ein Gratis-Spin.",
+    duration: Number.POSITIVE_INFINITY,
+    onUse: () => {
+      secondChanceArmed = true;
+      showToast("Zweite Chance bereit.");
+    },
+  },
+  {
+    id: "goldstaubkern",
+    name: "Goldstaubkern",
+    type: "passive",
+    rarity: "rare",
+    icon: "💛",
+    levels: [2],
+    description: "Jeder 20. Spin garantiert 1× Einsatz.",
+    onGain: () => {
+      goldDustActive = true;
+    },
+  },
+  {
+    id: "neon-ueberladung",
+    name: "Neon-Überladung",
+    type: "active",
+    rarity: "rare",
+    icon: "⚡",
+    levels: [1],
+    description: "3 Spins: Freispiele zählen als normale Spins.",
+    duration: 3,
+    onUse: () => {
+      freeSpinNormalTurns = Math.max(freeSpinNormalTurns, 3);
+      showToast("Neon-Überladung aktiv.");
+    },
+  },
+  {
+    id: "verzerrtes-glueck",
+    name: "Verzerrtes Glück",
+    type: "passive",
+    rarity: "rare",
+    icon: "🌀",
+    levels: [1, 2],
+    description: "Hohe Gewinne seltener, mittlere häufiger.",
+    onGain: () => {
+      warpedLuckActive = true;
+    },
+  },
+  {
+    id: "staubopfer",
+    name: "Staubopfer",
+    type: "active",
+    rarity: "rare",
+    icon: "🩸",
+    levels: [2],
+    description: "−50 € sofort → Freispiele +100 % Gewinn.",
+    duration: 1,
+    onUse: () => {
+      balance -= 50;
+      updateBalance();
+      freeSpinWinModifier += 1;
+      showToast("Staubopfer aktiv.");
+    },
+  },
+  {
+    id: "reaktionschip",
+    name: "Reaktionschip",
+    type: "passive",
+    rarity: "rare",
+    icon: "🕹️",
+    levels: [1, 2],
+    description: "Stoppen der Walzen erhöht Gewinn um +8 %.",
+    onGain: () => {
+      reactionChipActive = true;
+    },
+  },
+  {
+    id: "ruhender-joker",
+    name: "Ruhender Joker",
+    type: "active",
+    rarity: "rare",
+    icon: "🎭",
+    levels: [1, 2],
+    description: "Nächster Gewinn wird gespeichert und später ausgezahlt.",
+    duration: Number.POSITIVE_INFINITY,
+    onUse: () => {
+      pendingStoredWin = true;
+      showToast("Ruhender Joker bereit.");
+    },
+  },
+  {
+    id: "wuestenpakt",
+    name: "Wüstenpakt",
+    type: "passive",
+    rarity: "epic",
+    icon: "🏺",
+    levels: [2],
+    description: "Freispiele seltener, zahlen +60 %.",
+    onGain: () => {
+      desertPactActive = true;
+      freeSpinWinModifier = Math.max(freeSpinWinModifier, 0.6);
+    },
+  },
+  {
+    id: "neonfluss",
+    name: "Neonfluss",
+    type: "passive",
+    rarity: "epic",
+    icon: "🌊",
+    levels: [1],
+    description: "Jeder Gewinn erhöht den nächsten um +5 %.",
+    onGain: () => {
+      neonFlowActive = true;
+    },
+  },
+  {
+    id: "splitrealitaet",
+    name: "Splitrealität",
+    type: "active",
+    rarity: "epic",
+    icon: "🪞",
+    levels: [1, 2],
+    description: "Zwei Gewinnlinien werden zusätzlich ausgewertet.",
+    duration: 1,
+    onUse: () => {
+      splitRealityActive = true;
+      showToast("Splitrealität aktiv.");
+    },
+  },
+  {
+    id: "abgrundskern",
+    name: "Abgrundskern",
+    type: "passive",
+    rarity: "epic",
+    icon: "🕳️",
+    levels: [1, 2],
+    description: "Je negativer das Guthaben, desto höher die Gewinnchance.",
+    onGain: () => {
+      abyssCoreActive = true;
+    },
+  },
+  {
+    id: "staubkrone",
+    name: "Staubkrone",
+    type: "active",
+    rarity: "epic",
+    icon: "👑",
+    levels: [2],
+    description: "5 Freispiele mit garantierter Auszahlung.",
+    duration: 5,
+    onUse: () => {
+      if (currentLevel !== 2) return;
+      freeSpinGuaranteeTurns = Math.max(freeSpinGuaranteeTurns, 5);
+      triggerFreeSpins(5, freeSpinActive);
+      showToast("Staubkrone aktiv.");
+    },
+  },
+  {
+    id: "herz-der-maschine",
+    name: "Herz der Maschine",
+    type: "passive",
+    rarity: "legendary",
+    icon: "❤️",
+    levels: [1, 2],
+    description: "Jede 100. Drehung triggert Freispiele.",
+    onGain: () => {
+      heartMachineActive = true;
+    },
+  },
+  {
+    id: "goldene-hitze",
+    name: "Goldene Hitze",
+    type: "passive",
+    rarity: "legendary",
+    icon: "☀️",
+    levels: [2],
+    description: "Freispiele starten mit +100 % Gewinn, fallen pro Spin ab.",
+    onGain: () => {
+      goldenHeatActive = true;
+    },
+  },
+  {
+    id: "neon-archiv",
+    name: "Neon-Archiv",
+    type: "passive",
+    rarity: "legendary",
+    icon: "📀",
+    levels: [1],
+    description: "Letzter Gewinn wird bei Verlust einmal wiederholt.",
+    onGain: () => {
+      neonArchiveActive = true;
+    },
+  },
+  {
+    id: "leere-coin",
+    name: "Der Leere Coin",
+    type: "passive",
+    rarity: "mythic",
+    icon: "⚫",
+    levels: [1, 2],
+    description: "Freispiele geben keinen Gewinn – danach 10 Spins mit massiv erhöhter Chance.",
+    onGain: () => {
+      emptyCoinActive = true;
+    },
+  },
   {
     id: "bonuscoin",
     name: "Bonuscoin",
     type: "active",
+    rarity: "common",
     icon: "✨",
     levels: [2],
     description: "Nächste 5 Spins sind kostenlos.",
+    duration: 5,
     onUse: () => {
       if (currentLevel !== 2) {
         showToast("Bonuscoin nur in Level 2 verfügbar.");
@@ -695,29 +1346,38 @@ const coinCatalog = [
     id: "lucky-cat",
     name: "Lucky Cat",
     type: "passive",
+    rarity: "common",
     icon: "🐱",
+    levels: [1, 2],
     description: "Jackpot (3x 7) zahlt den Betrag doppelt.",
   },
   {
     id: "lucky-dog",
     name: "Lucky Dog",
     type: "passive",
+    rarity: "common",
     icon: "🐶",
+    levels: [1, 2],
     description: "Bei jedem 3er-Gewinn +10% Bonus.",
   },
   {
     id: "hourglass",
     name: "Hourglass",
     type: "passive",
+    rarity: "common",
     icon: "⏳",
+    levels: [1, 2],
     description: "Alle 10 Minuten +10 €.",
   },
   {
     id: "fake-coin",
     name: "Fake Coin",
     type: "active",
+    rarity: "common",
     icon: "🃏",
+    levels: [1, 2],
     description: "Versuch es selbst.",
+    duration: 1,
     onUse: () => {
       showToast("Fake Coin... nichts passiert.");
     },
@@ -726,8 +1386,11 @@ const coinCatalog = [
     id: "red-pepper",
     name: "Red Pepper",
     type: "active",
+    rarity: "common",
     icon: "🌶️",
+    levels: [1, 2],
     description: "+20% Gewinn für 3 Runden.",
+    duration: 3,
     onUse: () => {
       winBonusMultiplier += 0.2;
       winBonusTurns = Math.max(winBonusTurns, 3);
@@ -738,8 +1401,11 @@ const coinCatalog = [
     id: "golden-carrot",
     name: "Golden Carrot",
     type: "active",
+    rarity: "common",
     icon: "🥕",
+    levels: [1, 2],
     description: "Nächster Gewinn wird verdoppelt.",
+    duration: Number.POSITIVE_INFINITY,
     onUse: () => {
       doubleWinQueue += 1;
       doubleWinNext = true;
@@ -750,8 +1416,11 @@ const coinCatalog = [
     id: "lucky-punch",
     name: "Lucky Punch",
     type: "active",
+    rarity: "common",
     icon: "🥊",
+    levels: [1, 2],
     description: "Kein Gewinn? +25 €. Gewinn? Kein Bonus.",
+    duration: Number.POSITIVE_INFINITY,
     onUse: () => {
       luckyPunchQueue += 1;
       luckyPunchArmed = true;
@@ -762,8 +1431,11 @@ const coinCatalog = [
     id: "green-pepper",
     name: "Green Pepper",
     type: "active",
+    rarity: "common",
     icon: "🫑",
+    levels: [1, 2],
     description: "+10% Gewinn für 5 Runden.",
+    duration: 5,
     onUse: () => {
       winBonusMultiplier += 0.1;
       winBonusTurns = Math.max(winBonusTurns, 5);
@@ -840,9 +1512,12 @@ const renderCoinResults = (coins) => {
   coins.forEach((coin) => {
     const card = document.createElement("div");
     card.className = "coin-card";
+    card.dataset.rarity = coin.rarity ?? "common";
     const coinEl = document.createElement("div");
     coinEl.className = `coin ${coin.type}`;
     coinEl.textContent = coin.icon;
+    const rarityDot = document.createElement("span");
+    rarityDot.className = "rarity-dot";
     const name = document.createElement("h4");
     name.textContent = coin.name;
     const desc = document.createElement("p");
@@ -850,6 +1525,7 @@ const renderCoinResults = (coins) => {
     const tooltip = document.createElement("div");
     tooltip.className = "tooltip";
     tooltip.textContent = `${coin.description} (${coin.type === "passive" ? "Permanent" : "Einmalig"})`;
+    card.appendChild(rarityDot);
     card.appendChild(coinEl);
     card.appendChild(name);
     card.appendChild(desc);
@@ -906,7 +1582,18 @@ const rollCoins = (isReroll = false) => {
   coinSpinner.classList.add("show");
   setTimeout(() => {
     const availableCoins = coinCatalog.filter((coin) => (coin.levels ?? [1, 2]).includes(currentLevel));
-    const picks = Array.from({ length: 3 }, () => availableCoins[Math.floor(Math.random() * availableCoins.length)]);
+    const picks = Array.from({ length: 3 }, () => {
+      const totalWeight = availableCoins.reduce(
+        (sum, coin) => sum + (rarityWeights[coin.rarity ?? "common"] ?? 1),
+        0
+      );
+      let roll = Math.random() * totalWeight;
+      for (const coin of availableCoins) {
+        roll -= rarityWeights[coin.rarity ?? "common"] ?? 1;
+        if (roll <= 0) return coin;
+      }
+      return availableCoins[availableCoins.length - 1];
+    });
     renderCoinResults(picks);
     coinSpinner.classList.remove("show");
     playMetalClickSound();
@@ -920,8 +1607,24 @@ const rollCoins = (isReroll = false) => {
 
 const getRandomSymbol = () => {
   const symbols = getCurrentSymbols();
-  const choice = symbols[Math.floor(Math.random() * symbols.length)];
-  return choice;
+  const weights = symbols.map((symbol) => {
+    const boost = symbolWeightBoosts.get(symbol.icon) ?? 0;
+    let weight = 1 + boost;
+    if (abyssCoreActive && balance < 0) {
+      weight += Math.min(0.25, Math.abs(balance) / 2000);
+    }
+    if (postFreeSpinBoostTurns > 0) {
+      weight += 0.15;
+    }
+    return Math.max(0.05, weight);
+  });
+  const total = weights.reduce((sum, value) => sum + value, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < symbols.length; i += 1) {
+    roll -= weights[i];
+    if (roll <= 0) return symbols[i];
+  }
+  return symbols[symbols.length - 1];
 };
 
 const applyColumnSymbols = (index, columnSymbols) => {
@@ -991,6 +1694,9 @@ const evaluatePaylines = (grid) => {
       count += 1;
     }
     if (count < minCount) return;
+    if (count === 2 && doubleTwoCountsTurns > 0) {
+      count = 3;
+    }
     const symbol = symbols.find((entry) => entry.icon === firstIcon);
     if (!symbol) return;
     const multiplier = getSymbolMultiplier(symbol, count);
@@ -1054,24 +1760,34 @@ const spinReels = async () => {
 
   setLostState(false);
   isSpinning = true;
+  stopTriggered = false;
   updateFreeSpinIndicator();
+  const effectiveSpinCost = Math.max(0, Math.round(spinCost * (1 + stakeModifier)));
   if (freeSpins > 0 || freeSpinQueued) {
     if (freeSpinQueued) {
       freeSpinQueued = false;
     }
     freeSpins = Math.max(0, freeSpins - 1);
+    if (freeSpinNormalTurns > 0) {
+      freeSpinNormalTurns -= 1;
+      balance -= effectiveSpinCost;
+    }
   } else {
-    balance -= spinCost;
+    balance -= effectiveSpinCost;
   }
   updateBalance();
   showPayout("Walzen drehen...");
   playSpinSound();
+  spinCounter += 1;
+  if (heartMachineActive && spinCounter > 0 && spinCounter % 100 === 0) {
+    triggerFreeSpins(8, freeSpinActive);
+  }
 
   const layout = getLevelLayout();
   const results = Array.from({ length: layout.reels }, () =>
     Array.from({ length: layout.rows }, () => getRandomSymbol())
   );
-  const slowFactor = freeSpinActive ? 1.35 : 1;
+  const slowFactor = freeSpinActive || slowSpinTurns > 0 ? 1.35 : 1;
   const scatterIcon = getCurrentSymbols().find((symbol) => symbol.isScatter)?.icon;
   const stopDelays = Array.from({ length: layout.reels }, (_, index) => {
     const baseDelay = (500 + index * 260) * slowFactor;
@@ -1103,18 +1819,114 @@ const spinReels = async () => {
     ? currentGrid.reduce((sum, column) => sum + column.filter((icon) => icon === scatterIcon).length, 0)
     : 0;
   let payoutValue = wins.reduce((sum, win) => sum + win.amount, 0);
+  if (splitRealityActive && wins.length) {
+    const extra = wins
+      .slice()
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 2)
+      .reduce((sum, win) => sum + win.amount, 0);
+    payoutValue += extra;
+    splitRealityActive = false;
+  }
+  if (diagonalBonus > 0 && wins.length) {
+    const diagonalBonusValue = wins
+      .filter((win) => win.lineIndex === 3 || win.lineIndex === 4)
+      .reduce((sum, win) => sum + Math.round(win.amount * diagonalBonus), 0);
+    payoutValue += diagonalBonusValue;
+  }
+  if (reactionChipActive && stopTriggered && payoutValue > 0) {
+    payoutValue += Math.round(payoutValue * 0.08);
+  }
+  if (freeSpinActive && freeSpinNoWin) {
+    payoutValue = 0;
+  }
+  if (freeSpinActive && freeSpinGuaranteeTurns > 0) {
+    const minPayout = Math.round(spinCost * 0.5);
+    payoutValue = Math.max(payoutValue, minPayout);
+  }
+  if (goldDustActive && spinCounter > 0 && spinCounter % 20 === 0) {
+    payoutValue = Math.max(payoutValue, effectiveSpinCost);
+  }
+  let payoutMultiplier = 1 + winModifier;
+  if (freeSpinActive) {
+    payoutMultiplier += freeSpinWinModifier;
+    if (goldenHeatActive && freeSpinHeatBonus > 0) {
+      payoutMultiplier += freeSpinHeatBonus;
+    }
+  }
+  if (neonFlowActive && neonFlowBonus > 0) {
+    payoutMultiplier += neonFlowBonus;
+  }
+  if (lossBoostActive && lossBoostStacks > 0) {
+    payoutMultiplier += Math.min(0.2, lossBoostStacks * 0.04);
+  }
+  if (abyssCoreActive && balance < 0) {
+    payoutMultiplier += Math.min(0.25, Math.abs(balance) / 1000);
+  }
+  if (postFreeSpinBoostTurns > 0) {
+    payoutMultiplier += postFreeSpinBoost;
+  }
+  if (payoutMultiplier !== 1) {
+    payoutValue = Math.round(payoutValue * payoutMultiplier);
+  }
+  if (warpedLuckActive && payoutValue > 0) {
+    const highThreshold = spinCost * 4;
+    const midThreshold = spinCost * 2;
+    if (payoutValue > highThreshold) {
+      payoutValue = Math.round(payoutValue * 0.85);
+    } else if (payoutValue >= midThreshold) {
+      payoutValue = Math.round(payoutValue * 1.1);
+    }
+  }
+  if (pendingStoredWin && payoutValue > 0) {
+    storedWinAmount = payoutValue;
+    storedWinDelay = 3;
+    payoutValue = 0;
+    pendingStoredWin = false;
+    consumeActiveCoin("ruhender-joker");
+    showToast("Ruhender Joker speichert den Gewinn.");
+  }
+  if (storedWinDelay > 0) {
+    storedWinDelay -= 1;
+    if (storedWinDelay === 0 && storedWinAmount > 0) {
+      payoutValue += storedWinAmount;
+      storedWinAmount = 0;
+      showToast("Ruhender Joker zahlt aus.");
+    }
+  }
   let message = wins.length ? `${wins.length} Gewinnlinie(n)! +${payoutValue}` : "Leider kein Gewinn.";
   let bonusTriggered = false;
   const bonusEvents = [];
 
-  if (wins.length) {
+  if (!wins.length && refundOnLossTurns > 0) {
+    balance += effectiveSpinCost;
+    refundOnLossTurns -= 1;
+    showToast("Einsatz zurückerstattet.");
+  }
+
+  if (heatChipActive && lossStreak >= 10) {
+    heatChipReady = true;
+  }
+  if (payoutValue > 0) {
+    if (heatChipReady) {
+      payoutValue += Math.round(payoutValue * 0.05);
+      heatChipReady = false;
+      lossStreak = 0;
+    }
+  }
+
+  if (payoutValue > 0) {
     balance += payoutValue;
   }
 
-  if (currentLevel === 2 && scatterCount >= 3) {
+  if (currentLevel === 2 && scatterCount >= (desertPactActive ? 4 : 3)) {
     const baseSpins = scatterCount === 3 ? 8 : scatterCount === 4 ? 11 : 13;
     const retrigger = freeSpinActive;
     triggerFreeSpins(baseSpins, retrigger);
+    if (scatterCount >= 5) {
+      freeSpinHeatBonus = Math.max(freeSpinHeatBonus, 0.5);
+      showToast("Starker Startbonus!");
+    }
     scatterPending = true;
   }
 
@@ -1158,6 +1970,11 @@ const spinReels = async () => {
   }
 
   lastSpinWin = payoutValue > 0;
+  if (!lastSpinWin) {
+    lossStreak += 1;
+  } else {
+    lossStreak = 0;
+  }
   if (!lastSpinWin && luckyPunchQueue > 0) {
     balance += luckyPunchReward;
     bonusTriggered = true;
@@ -1169,6 +1986,27 @@ const spinReels = async () => {
     consumeActiveCoin("lucky-punch");
   }
   luckyPunchArmed = luckyPunchQueue > 0;
+
+  if (!lastSpinWin && lossBoostActive) {
+    lossBoostStacks = Math.min(5, lossBoostStacks + 1);
+  }
+  if (lastSpinWin) {
+    if (neonFlowActive) {
+      neonFlowBonus = Math.min(0.3, neonFlowBonus + 0.05);
+    }
+    lastWinAmount = payoutValue;
+    if (neonArchiveActive) {
+      neonArchiveReady = true;
+    }
+  } else {
+    neonFlowBonus = 0;
+    if (neonArchiveActive && neonArchiveReady && lastWinAmount > 0) {
+      balance += lastWinAmount;
+      bonusTriggered = true;
+      bonusEvents.push({ amount: lastWinAmount, label: "Neon-Archiv", icon: "📀" });
+      neonArchiveReady = false;
+    }
+  }
 
   updateBalance();
   showPayout(message, payoutValue > 0);
@@ -1189,12 +2027,44 @@ const spinReels = async () => {
     setTimeout(() => showCoinBonus(event.amount, event.label, event.icon), index * 150);
   });
 
+  if (stakeModifierTurns > 0) {
+    stakeModifierTurns -= 1;
+    if (stakeModifierTurns === 0) {
+      stakeModifier = 0;
+    }
+  }
+  if (winModifierTurns > 0) {
+    winModifierTurns -= 1;
+    if (winModifierTurns === 0) {
+      winModifier = 0;
+    }
+  }
+  if (doubleTwoCountsTurns > 0) {
+    doubleTwoCountsTurns -= 1;
+  }
+  if (slowSpinTurns > 0) {
+    slowSpinTurns -= 1;
+  }
+  if (freeSpinGuaranteeTurns > 0 && freeSpinActive) {
+    freeSpinGuaranteeTurns -= 1;
+  }
+  if (freeSpinActive && goldenHeatActive && freeSpinHeatBonus > 0) {
+    freeSpinHeatBonus = Math.max(0, freeSpinHeatBonus - 0.2);
+  }
+  if (postFreeSpinBoostTurns > 0) {
+    postFreeSpinBoostTurns -= 1;
+  }
+
   inventory.forEach((coin, index) => {
     if (!coin || !coin.active) return;
     if (Number.isFinite(coin.remainingSpins) && coin.remainingSpins > 0) {
       coin.remainingSpins -= 1;
     }
     if (coin.remainingSpins <= 0) {
+      if (coin.id === "spannungsaufbau") {
+        lossBoostActive = false;
+        lossBoostStacks = 0;
+      }
       inventory[index] = null;
     }
   });
@@ -1210,6 +2080,10 @@ const spinReels = async () => {
     freeSpinActive = false;
     document.body.classList.remove("free-spin-active");
     showPayout(`Freispiele beendet: +${freeSpinTotalWin} €`, true);
+    if (emptyCoinActive) {
+      postFreeSpinBoostTurns = Math.max(postFreeSpinBoostTurns, 10);
+      showToast("Leerer Coin: 10 Spins mit erhöhter Chance!");
+    }
     updateFreeSpinIndicator();
   }
 
@@ -1264,6 +2138,7 @@ stakeSelect.addEventListener("change", () => {
 
 stopButton.addEventListener("click", () => {
   playClickSound();
+  stopTriggered = true;
   stopSpinLoops();
 });
 
@@ -1326,12 +2201,11 @@ inventorySlots.forEach((slot, index) => {
       if (!coin.active) {
         coin.active = true;
         coin.onUse?.();
-        if (coin.id === "bonuscoin") coin.remainingSpins = 5;
-        if (coin.id === "red-pepper") coin.remainingSpins = 3;
-        if (coin.id === "green-pepper") coin.remainingSpins = 5;
-        if (coin.id === "golden-carrot") coin.remainingSpins = Number.POSITIVE_INFINITY;
-        if (coin.id === "lucky-punch") coin.remainingSpins = Number.POSITIVE_INFINITY;
-        if (coin.id === "fake-coin") {
+        if (Number.isFinite(coin.duration)) {
+          coin.remainingSpins = coin.duration;
+        } else if (coin.duration === Number.POSITIVE_INFINITY) {
+          coin.remainingSpins = Number.POSITIVE_INFINITY;
+        } else {
           coin.remainingSpins = 1;
         }
         playCoinActivateSound();
