@@ -52,7 +52,7 @@ const levelSymbolSets = {
     { icon: "❌", twoMult: 0, threeMult: "refund" },
   ],
   2: [
-    { icon: "📜", isScatter: true },
+    { icon: "📖", isScatter: true },
     { icon: "10", threeMult: 3.5, fourMult: 7, fiveMult: 12 },
     { icon: "J", threeMult: 3.8, fourMult: 7.5, fiveMult: 13 },
     { icon: "Q", threeMult: 4.2, fourMult: 8.5, fiveMult: 14 },
@@ -121,7 +121,7 @@ let ambienceNodes = null;
 
 const levelSettings = {
   1: { minStake: 1, gameOverLimit: -1000, winTarget: 300 },
-  2: { minStake: 25, gameOverLimit: -200, winTarget: 750 },
+  2: { minStake: 25, gameOverLimit: -2000, winTarget: 750 },
 };
 
 const getLevelSettings = () => levelSettings[currentLevel] ?? levelSettings[1];
@@ -1072,7 +1072,15 @@ const spinReels = async () => {
     Array.from({ length: layout.rows }, () => getRandomSymbol())
   );
   const slowFactor = freeSpinActive ? 1.35 : 1;
-  const stopDelays = Array.from({ length: layout.reels }, (_, index) => (500 + index * 260) * slowFactor);
+  const scatterIcon = getCurrentSymbols().find((symbol) => symbol.isScatter)?.icon;
+  const stopDelays = Array.from({ length: layout.reels }, (_, index) => {
+    const baseDelay = (500 + index * 260) * slowFactor;
+    if (!scatterIcon) return baseDelay;
+    const priorScatters = results
+      .slice(0, index)
+      .reduce((sum, column) => sum + column.filter((symbol) => symbol.icon === scatterIcon).length, 0);
+    return priorScatters >= 2 ? baseDelay * 1.35 : baseDelay;
+  });
   playRattleSound(stopDelays[stopDelays.length - 1]);
 
   reels.forEach((_, index) => startReelSpin(index));
@@ -1091,7 +1099,6 @@ const spinReels = async () => {
 
   currentGrid = results.map((column) => column.map((symbol) => symbol.icon));
   const wins = evaluatePaylines(currentGrid);
-  const scatterIcon = getCurrentSymbols().find((symbol) => symbol.isScatter)?.icon;
   const scatterCount = scatterIcon
     ? currentGrid.reduce((sum, column) => sum + column.filter((icon) => icon === scatterIcon).length, 0)
     : 0;
